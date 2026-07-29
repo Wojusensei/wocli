@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "wocli"
-version = "0.1.0"
+version = "0.2.1"
 description = "一个为发电而生的何意味终端小工具"
 authors = [{name = "Wojusensei"}]
 license = {text = "MIT"}
