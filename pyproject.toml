@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wocli"
+version = "0.1.0"
+description = "一个为发电而生的何意味终端小工具"
+authors = [{name = "Wojusensei"}]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "License :: OSI Approved :: MIT License",
+]
+dependencies = [
+    "qrcode>=7.4",
+    "Pillow>=10.0",
+    "requests>=2.31",
+]
+
+[project.scripts]
+wocli = "wocli.main:main"
+
+[tool.setuptools.package-dir]
+"" = "src"
