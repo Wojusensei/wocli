@@ -6,7 +6,7 @@
 
 ## 安装
 
-请先确保你装了python：
+请先确保你装了python：，然后执行：
 
 ```bash
 pip install wocli
