@@ -114,18 +114,14 @@ def get_public_ip():
 
 
 def run():
-    """Run the ip command."""
     local_ip = get_local_ip()
     ipv6 = get_ipv6()
     gateway = get_gateway()
     public_ip = get_public_ip()
 
     print()
-    print("  [ Network Info ]")
-    print("  +-----------------------------+")
-    print(f"  | {'IPv4':<10} {local_ip:<15} |")
-    print(f"  | {'IPv6':<10} {ipv6:<15} |")
-    print(f"  | {'Gateway':<10} {gateway:<15} |")
-    print(f"  | {'Public':<10} {public_ip:<15} |")
-    print("  +-----------------------------+")
+    print(f"  内网 IPv4：{local_ip}")
+    print(f"  内网 IPv6：{ipv6}")
+    print(f"  默认网关：{gateway}")
+    print(f"  公网 IP：{public_ip}")
     print()

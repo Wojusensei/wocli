@@ -91,14 +91,11 @@ def run():
         return
 
     print()
-    print("  [ 端口占用 ]")
-    print("  +----------+---------------------------+")
-    print(f"  | {'端口':<8} | {'进程':<25} |")
-    print("  +----------+---------------------------+")
+    print("  端口占用情况：")
+    print()
     seen = set()
     for port, proc in ports:
         if port not in seen:
             seen.add(port)
-            print(f"  | {port:<8} | {proc:<25} |")
-    print("  +----------+---------------------------+")
+            print(f"  {port:<8} {proc}")
     print()

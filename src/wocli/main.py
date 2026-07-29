@@ -6,7 +6,7 @@ import sys
 from wocli.commands import (
     ip, port, tree, sys_cmd, path_cmd, gpa, luck, matrix,
     lolcat, time_cmd, hash_cmd, regex_cmd, typing_cmd,
-    progress, qr_cmd, goodbye, cow, glitch
+    progress, qr_cmd, goodbye, cow, glitch, battery, wifi_cmd, dead
 )
 
 COMMANDS = {
@@ -28,13 +28,18 @@ COMMANDS = {
     "goodbye": (goodbye.run, "花式退出动画"),
     "cow": (cow.run, "ASCII 牛说话"),
     "glitch": (glitch.run, "文字故障风"),
+    "battery": (battery.run, "电池信息与健康评分"),
+    "wifi": (wifi_cmd.run, "WiFi 信息与信号评分"),
+    "dead": (dead.run, "伪装终端死机"),
 }
 
 HELP_GROUPS = {
+    
     "学习": ["ip"],
-    "效率": ["port", "tree", "sys", "path"],
-    "发电": ["gpa", "luck", "matrix", "lolcat", "typing", "progress", "qr", "goodbye", "cow", "glitch"],
+    "效率": ["port", "tree", "sys", "path", "battery", "wifi"],
+    "发电": ["gpa", "luck", "matrix", "lolcat", "typing", "progress", "qr", "goodbye", "cow", "glitch", "dead"],
     "coding": ["time", "hash", "regex"]
+
 }
 
 

@@ -77,9 +77,8 @@ def run():
     gpa = total_points / total_credits
 
     print()
-    print("  " + "-" * 40)
-    print(f"  加权 GPA: {gpa:.2f} / 4.0")
-    print(f"  总学分: {total_credits:.0f}")
+    print(f"  加权 GPA：{gpa:.2f} / 4.0")
+    print(f"  总学分：{total_credits:.0f}")
     print()
     print(f"  {comment(gpa)}")
     print()

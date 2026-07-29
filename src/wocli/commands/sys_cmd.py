@@ -137,24 +137,21 @@ def draw_bar(label, used, total, width=30):
 
 
 def run():
-    """Run the sys command."""
-    print("\n  [ System Status ]")
-    print(f"  OS: {platform.system()} {platform.release()}")
+    print(f"\n  系统状态 · {platform.system()} {platform.release()}")
     print()
 
-    for _ in range(3):  # Refresh 3 times
-        # Move cursor up 4 lines
+    for _ in range(3):
         cpu = get_cpu_usage()
         mem_used, mem_total = get_memory_usage()
         disk_used, disk_total = get_disk_usage()
 
-        print(f"  {'CPU':<6} [{'=' * int(30 * cpu / 100):<29}>{']'} {cpu:.0f}%")
-        print(draw_bar("MEM", mem_used, mem_total))
-        print(draw_bar("DISK", disk_used, disk_total))
+        print(f"  CPU  {'=' * int(30 * cpu / 100):<30} {cpu:.0f}%")
+        print(draw_bar("内存", mem_used, mem_total))
+        print(draw_bar("磁盘", disk_used, disk_total))
 
         if _ < 2:
             time.sleep(1)
-            sys.stdout.write("\033[3A")  # Move cursor up 3 lines
+            sys.stdout.write("\033[3A")
             sys.stdout.flush()
 
     print()

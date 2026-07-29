@@ -23,33 +23,19 @@ def compute_hash(filepath, algo):
 
 
 def run():
-    """运行 hash 命令."""
     if len(sys.argv) < 2:
-        print("\n  用法: wocli hash <文件路径>\n")
+        print("\n  用法：wocli hash <文件路径>\n")
         return
 
     filepath = sys.argv[1]
-
     if not os.path.isfile(filepath):
-        print(f"\n  文件不存在: {filepath}\n")
+        print(f"\n  文件不存在：{filepath}\n")
         return
 
     print()
-    print(f"  [ 文件哈希 ]")
-    print(f"  文件: {os.path.basename(filepath)}")
-    print(f"  " + "-" * 50)
-
+    print(f"  文件：{os.path.basename(filepath)}")
     md5 = compute_hash(filepath, "md5")
     sha256 = compute_hash(filepath, "sha256")
-
-    if md5:
-        print(f"  MD5:     {md5}")
-    else:
-        print(f"  MD5:     计算失败")
-
-    if sha256:
-        print(f"  SHA256:  {sha256}")
-    else:
-        print(f"  SHA256:  计算失败")
-
+    print(f"  MD5：    {md5 if md5 else '计算失败'}")
+    print(f"  SHA256： {sha256 if sha256 else '计算失败'}")
     print()
