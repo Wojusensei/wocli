@@ -6,13 +6,13 @@
 
 ## 安装
 
-请先确保你装了python：，然后执行：
+请先确保你装了python，然后执行：
 
 ```bash
 pip install wocli
 ```
 
-如果终端提示 externally-managed-environment：
+MacOS用户，如果终端提示 externally-managed-environment：
 
 ```bash
 python3 -m venv wocli_env
@@ -30,7 +30,7 @@ Windows 用户如果被提示 wocli 命令找不到，请把 Python 的 Scripts 
 
 wocli ip : 查看内网 IPv4 / IPv6、网关、公网 IP
 
-wocli chat : 局域网聊天，不需要网络，输入对方 IP 即可对话
+wocli chat : 局域网聊天，不需要网络，输入对方 IP 即可对话；对方电脑运行此功能后会显示 IP 以及其他需要的信息
 
 ### 效率
 
