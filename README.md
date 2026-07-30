@@ -2,7 +2,7 @@
 
 一个何意味终端工具箱，十分甚至是九分的好玩
 
-我们支持 macos 和 windows 的终端使用
+我们支持 macos 和 windows 的终端使用，但是由于某些特殊符号以及一些渲染问题，目前发现在 Windows 系统上，非 Windows 11 用户在某些功能的使用体验上会受到影响，例如wocli qr 这种包含特殊制表符的功能。
 
 ## 安装
 
@@ -20,7 +20,7 @@ source wocli_env/bin/activate
 pip install wocli
 ```
 
-Windows 用户如果被提示 wocli 命令找不到，请把 Python 的 Scripts 目录加到 PATH 环境变量。非 Windows 11 用户在某些功能的使用体验上会受到影响。
+Windows 用户如果被提示 wocli 命令找不到，请把 Python 的 Scripts 目录加到 PATH 环境变量。
 
 ## 使用
 
