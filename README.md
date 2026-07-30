@@ -20,7 +20,7 @@ source wocli_env/bin/activate
 pip install wocli
 ```
 
-Windows 用户如果被提示 wocli 命令找不到，请把 Python 的 Scripts 目录加到 PATH 环境变量。
+Windows 用户如果被提示 wocli 命令找不到，请把 Python 的 Scripts 目录加到 PATH 环境变量。非 Windows 11 用户在某些功能的使用体验上会受到影响。
 
 ## 使用
 
