@@ -57,7 +57,7 @@ wocli gpa ： 交互式算加权 GPA，附带毒舌点评
 
 wocli luck ： 编程运势、幸运语言、bug 指数
 
-wocli matrix ： 嘉豪数字雨，Ctrl+C 退出
+wocli matrix 一段文本 另一段文本 其他文本（用空格划分）： 嘉豪数字雨，你输入的文本会出现在雨中。Ctrl+C 退出
 
 wocli lolcat 文字 : 彩虹渐变色输出文字
 
