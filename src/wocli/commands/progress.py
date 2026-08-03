@@ -4,6 +4,7 @@ import sys
 import time
 import random
 import signal
+from wocli import terminal
 
 
 def run():
@@ -30,39 +31,31 @@ def run():
     print()
     print(f"  {task}...")
     print()
+    terminal.hide_cursor()
 
     running = True
-
     def stop(signum, frame):
         nonlocal running
         running = False
-
     signal.signal(signal.SIGINT, stop)
     signal.signal(signal.SIGTERM, stop)
 
     progress = 0
     width = 40
-
     try:
         while running:
-            # 随机增长，但永远到不了 100 awa
-            increment = random.uniform(0.3, 2.5)
-            progress += increment
-
-            # 到 95 以后大幅减速
+            progress += random.uniform(0.3, 2.5)
             if progress > 95:
                 progress = random.uniform(95, 99.5)
-
             filled = int(width * progress / 100)
             bar = "=" * filled + ">" + " " * (width - filled - 1)
-
             eta = random.randint(1, 999)
-            print(f"\r  [{bar}] {progress:.1f}%  ETA: {eta}s", end="")
+            sys.stdout.write(f"\r  [{bar}] {progress:.1f}%  ETA: {eta}s")
             sys.stdout.flush()
-
             time.sleep(random.uniform(0.1, 0.5))
-    except Exception:
+    except:
         pass
     finally:
+        terminal.show_cursor()
         print()
         print()

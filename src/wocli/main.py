@@ -2,6 +2,10 @@
 """wocli - Main entry point."""
 
 import sys
+import sys
+from wocli import terminal
+
+terminal.init_terminal()
 
 from wocli.commands import (
     ip, port, tree, sys_cmd, path_cmd, gpa, luck, matrix,
