@@ -2,7 +2,6 @@
 """wocli - Main entry point."""
 
 import sys
-import sys
 from wocli import terminal
 
 terminal.init_terminal()
@@ -10,7 +9,6 @@ terminal.init_terminal()
 from wocli.commands import (
     ip, port, tree, sys_cmd, path_cmd, gpa, luck, matrix,
     lolcat, time_cmd, hash_cmd, regex_cmd, typing_cmd,
-    progress, qr_cmd, goodbye, cow, glitch, battery, wifi_cmd, dead,chat
 )
 
 COMMANDS = {
@@ -39,62 +37,16 @@ COMMANDS = {
 }
 
 HELP_GROUPS = {
-    
-    "学习": ["ip","chat"],
+    "学习": ["ip", "chat"],
     "效率": ["port", "tree", "sys", "path", "battery", "wifi"],
     "发电": ["gpa", "luck", "matrix", "lolcat", "typing", "progress", "qr", "goodbye", "cow", "glitch", "dead"],
-    "coding": ["time", "hash", "regex"]
-
 }
 
 
 def print_help():
-    colors = [196, 202, 208, 214, 220, 226]
-    blocks = [
-        "██╗    ██╗       ██████╗       ██████╗      ██╗         ██╗",
-        "██║    ██║     ██╔═══██╗     ██╔════╝      ██║         ██║",
-        "██║ █╗ ██║     ██║   ██║     ██║           ██║         ██║",
-        "██║███╗██║     ██║   ██║     ██║           ██║         ██║",
-        "╚███╔███╔╝     ╚██████╔╝     ╚██████╗      ███████╗    ██║",
-        " ╚══╝╚══╝       ╚═════╝       ╚═════╝      ╚══════╝    ╚═╝",
-    ]
-    shadow = [
-        "                                                              ",
-        "   ██╗    ██╗       ██████╗       ██████╗      ██╗         ██╗  ",
-        "   ██║    ██║     ██╔═══██╗     ██╔════╝      ██║         ██║  ",
-        "   ██║ █╗ ██║     ██║   ██║     ██║           ██║         ██║  ",
-        "   ██║███╗██║     ██║   ██║     ██║           ██║         ██║  ",
-        "   ╚███╔███╔╝     ╚██████╔╝     ╚██████╗      ███████╗    ██║  ",
-        "    ╚══╝╚══╝       ╚═════╝       ╚═════╝      ╚══════╝    ╚═╝  ",
-    ]
-
-    print()
-
-    for line in shadow:
-        for ch in line:
-            if ch.strip():
-                sys.stdout.write(f"\033[38;5;240m{ch}\033[0m")
-            else:
-                sys.stdout.write(ch)
-        print()
-
-
-    sys.stdout.write(f"\033[8A")
-
-
-    for row_idx, line in enumerate(blocks):
-        color = colors[row_idx % len(colors)]
-        for ch in line:
-            if ch.strip():
-                sys.stdout.write(f"\033[38;5;{color}m{ch}\033[0m")
-            else:
-                sys.stdout.write(ch)
-        print()
-
-
-    for _ in range(len(shadow) - len(blocks)):
-        print()
-
+    # 使用 terminal 模块获取自适应 logo
+    logo = terminal.get_logo()
+    print(logo)
     print()
     print("  用法: wocli <命令> [参数]")
     print()
@@ -119,7 +71,7 @@ def main():
         return
 
     if command in ("version", "-v", "--version"):
-        print(f"wocli v0.1.0")
+        print(f"wocli v0.3.0")   # 更新版本号
         return
 
     if command in COMMANDS:

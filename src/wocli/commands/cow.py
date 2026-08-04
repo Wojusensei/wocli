@@ -1,9 +1,8 @@
-"""wocli cow - ASCII牛说你说的话."""
-
+"""wocli cow - ASCII 牛说话"""
 import sys
+from wocli import terminal
 
-
-COW = r"""
+COW_UNICODE = r"""
         \   ^__^
          \  (oo)\_______
             (__)\       )\/\
@@ -11,11 +10,17 @@ COW = r"""
                 ||     ||
 """
 
+COW_ASCII = r"""
+        \   ^__^
+         \  (oo)\_______
+            (__)\       )\/\
+                ||----w |
+                ||     ||
+"""
 
 def make_bubble(text):
-    """生成对话气泡."""
-    lines = []
     words = text.split()
+    lines = []
     line = ""
     for word in words:
         if len(line) + len(word) + 1 <= 36:
@@ -26,7 +31,7 @@ def make_bubble(text):
     if line:
         lines.append(line)
 
-    max_len = max(len(l) for l in lines) if lines else 0
+    max_len = max((len(l) for l in lines), default=0)
     top = "  " + "_" * (max_len + 2)
     bottom = "  " + "-" * (max_len + 2)
 
@@ -44,15 +49,17 @@ def make_bubble(text):
     bubble.append(bottom)
     return "\n".join(bubble)
 
-
 def run():
-    """运行 cow 命令."""
     if len(sys.argv) > 1:
         text = " ".join(sys.argv[1:])
     else:
-        text = "哞————(无意味)"
+        text = "哞。(无感情)"
+    if terminal.CAPS.get("unicode", True):
+        cow = COW_UNICODE
+    else:
+        cow = COW_ASCII
 
     print()
     print(make_bubble(text))
-    print(COW)
+    print(cow)
     print()
