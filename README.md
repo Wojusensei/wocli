@@ -4,6 +4,8 @@
 
 我们支持 macos 和 windows 的终端使用，但是由于某些特殊符号以及一些渲染问题，目前发现在 Windows 系统上，非 Windows 11 用户在某些功能的使用体验上会受到影响，例如 ```wocli qr``` 这种包含特殊制表符的功能。
 
+2026.08.03 以上问题得到了一定程度的修复，大幅提升了使用体验。
+
 ## 安装
 
 请先确保你装了python，然后执行：
@@ -21,6 +23,8 @@ pip install wocli
 ```
 
 Windows 用户如果被提示 wocli 命令找不到，请把 Python 的 Scripts 目录加到 PATH 环境变量。
+
+如果你拉取到本地并对源代码进行了修改和调试，例如在本地用 ```pip install -e .``` 开发模式时，colorama 没自动装上是因为可编辑安装有时不会重新解析依赖，需要自行安装依赖
 
 ## 使用
 
@@ -53,7 +57,7 @@ wocli gpa ： 交互式算加权 GPA，附带毒舌点评
 
 wocli luck ： 编程运势、幸运语言、bug 指数
 
-wocli matrix ： 嘉豪数字雨，Ctrl+C 退出
+wocli matrix 一段文本 另一段文本 其他文本（用空格划分）： 嘉豪数字雨，你输入的文本会出现在雨中。Ctrl+C 退出
 
 wocli lolcat 文字 : 彩虹渐变色输出文字
 

@@ -9,6 +9,7 @@ terminal.init_terminal()
 from wocli.commands import (
     ip, port, tree, sys_cmd, path_cmd, gpa, luck, matrix,
     lolcat, time_cmd, hash_cmd, regex_cmd, typing_cmd,
+    progress, qr_cmd, goodbye, cow, glitch, battery, wifi_cmd, dead, chat
 )
 
 COMMANDS = {
@@ -40,6 +41,7 @@ HELP_GROUPS = {
     "学习": ["ip", "chat"],
     "效率": ["port", "tree", "sys", "path", "battery", "wifi"],
     "发电": ["gpa", "luck", "matrix", "lolcat", "typing", "progress", "qr", "goodbye", "cow", "glitch", "dead"],
+    "coding": ["time", "hash", "regex"]
 }
 
 
@@ -71,7 +73,7 @@ def main():
         return
 
     if command in ("version", "-v", "--version"):
-        print(f"wocli v0.3.0")   # 更新版本号
+        print(f"wocli v0.3.0")   # 更新版本号在此
         return
 
     if command in COMMANDS:
