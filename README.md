@@ -57,7 +57,7 @@ wocli wifi : WiFi 名称、信号强度打分、信道、加密方式
 
 wocli gpa ： 交互式算加权 GPA，附带毒舌点评
 
-wocli luck ： 编程运势、幸运语言、bug 指数
+wocli luck ： 编程运势、幸运语言、bug 指数（每次输入指令都会重新抽，并不是每日固定）
 
 wocli matrix 一段文本 另一段文本 其他文本（用空格划分）： 嘉豪数字雨，你输入的文本会出现在雨中。Ctrl+C 退出
 
