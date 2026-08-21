@@ -1,9 +1,11 @@
-"""wocli badapple - 播放 Bad Apple!! ASCII 动画
+"""wocli badapple - 播放 Bad Apple!! ASCII 动画（可选配乐）
 
-帧序列共 6572 帧（100x74，'@' 为暗像素），来自 TryCaze/Bad-Apple-ASCII。
-首次使用自动下载 zip（约 4.6MB）并解包为 gzip 缓存，之后离线播放。
-查找顺序：命令行路径 > 环境变量 WOCLI_BADAPPLE_FRAMES > 模块目录 frames.txt
-> 本地缓存 > 自动下载生成缓存。
+帧序列共 6572 帧（100x75，多级 ASCII 灰度字符），来自
+TryCaze/Bad-Apple-ASCII。首次使用自动下载 zip（约 4.6MB）并解包为
+gzip 缓存，之后离线播放；灰度字符统一渲染为 ░▒▓█ 块字符。
+可选下载配套 mp3（约 5.6MB），用系统播放器（afplay/ffplay/mpv）同步播放。
+帧源查找顺序：命令行路径 > 环境变量 WOCLI_BADAPPLE_FRAMES > 模块目录
+frames.txt > 本地缓存 > 自动下载生成缓存。
 """
 import gzip
 import io
@@ -22,14 +24,60 @@ FPS = 30
 FRAME_W, FRAME_H = 100, 75
 FRAME_FILE = os.path.join(os.path.dirname(__file__), "frames.txt")
 ZIP_URL = "https://raw.githubusercontent.com/TryCaze/Bad-Apple-ASCII/main/ASCIIframes.zip"
+MUSIC_URL = "https://raw.githubusercontent.com/TryCaze/Bad-Apple-ASCII/main/music/badapple.mp3"
+
+# 帧源是 ASCII 灰度字符（亮->暗大致为 : - + = * # % @），映射成块字符，
+# 避免各种字符在不同字体下宽高不一造成的错位和"乱码"感
+CHAR_MAP = str.maketrans({
+    "@": "█", "%": "▓", "#": "▓",
+    "*": "▒", "=": "▒", "+": "▒",
+    "-": "░", ":": "░",
+})
 
 
-def _cache_path():
+def _cache_dir():
     if platform.system() == "Windows":
         base = os.environ.get("LOCALAPPDATA", os.path.expanduser("~"))
     else:
         base = os.environ.get("XDG_CACHE_HOME", os.path.expanduser("~/.cache"))
-    return os.path.join(base, "wocli", "badapple_frames.txt.gz")
+    return os.path.join(base, "wocli")
+
+
+def _cache_path():
+    return os.path.join(_cache_dir(), "badapple_frames.txt.gz")
+
+
+def _music_cache_path():
+    return os.path.join(_cache_dir(), "badapple_music.mp3")
+
+
+def _download_to(url, dest):
+    """优先 urllib；证书验证失败（常见于 Watt Toolkit 等加速器替换了证书）
+    时退回系统 curl——同样严格校验 TLS，只是用系统信任库。"""
+    req = urllib.request.Request(url, headers={"User-Agent": "wocli"})
+    try:
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            total = int(resp.headers.get("Content-Length", 0))
+            done = 0
+            with open(dest, "wb") as f:
+                while True:
+                    chunk = resp.read(65536)
+                    if not chunk:
+                        break
+                    f.write(chunk)
+                    done += len(chunk)
+                    if total:
+                        sys.stdout.write(f"\r  下载中... {done * 100 // total}% ({done // 1024}KB)")
+                        sys.stdout.flush()
+        print()
+        return
+    except Exception as e:
+        curl = shutil.which("curl")
+        if not curl:
+            raise
+        print(f"  直接下载失败（{e}），改用系统 curl 重试...")
+    subprocess.run([curl, "-fsSL", "--max-time", "600", "-o", dest, url], check=True)
+    print(f"  下载完成（{os.path.getsize(dest) // 1024}KB）")
 
 
 def _read_frames(path):
@@ -49,51 +97,21 @@ def _read_frames(path):
     return data.split("\nSPLIT\n")
 
 
-def _download_zip():
-    """优先 urllib；证书验证失败（常见于 Watt Toolkit 等加速器替换了证书）
-    时退回系统 curl——同样严格校验 TLS，只是用系统信任库。"""
-    req = urllib.request.Request(ZIP_URL, headers={"User-Agent": "wocli"})
-    try:
-        with urllib.request.urlopen(req, timeout=60) as resp:
-            total = int(resp.headers.get("Content-Length", 0))
-            buf = io.BytesIO()
-            done = 0
-            while True:
-                chunk = resp.read(65536)
-                if not chunk:
-                    break
-                buf.write(chunk)
-                done += len(chunk)
-                if total:
-                    sys.stdout.write(f"\r  下载中... {done * 100 // total}% ({done // 1024}KB)")
-                    sys.stdout.flush()
-        print()
-        return buf.getvalue()
-    except Exception as e:
-        curl = shutil.which("curl")
-        if not curl:
-            raise
-        print(f"  直接下载失败（{e}），改用系统 curl 重试...")
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as tf:
-            tmp = tf.name
-        try:
-            subprocess.run([curl, "-fsSL", "--max-time", "600", "-o", tmp, ZIP_URL], check=True)
-            with open(tmp, "rb") as f:
-                data = f.read()
-            print(f"  下载完成（{len(data) // 1024}KB）")
-            return data
-        finally:
-            os.unlink(tmp)
-
-
 def _fetch_and_cache():
     """下载 zip，逐帧解包写入 gzip 缓存，返回帧列表."""
-    data = _download_zip()
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as tf:
+        tmp = tf.name
+    try:
+        _download_to(ZIP_URL, tmp)
+        with open(tmp, "rb") as f:
+            data = f.read()
+    finally:
+        os.unlink(tmp)
 
     frames = []
     cache = _cache_path()
     os.makedirs(os.path.dirname(cache), exist_ok=True)
-    # 帧内容全是 '@' 和空格，level 1 也压得很好且快得多
+    # 帧内容全是 ASCII 灰度字符，level 1 也压得很好且快得多
     with zipfile.ZipFile(io.BytesIO(data)) as z, gzip.open(cache, "wt", encoding="utf-8", compresslevel=1) as out:
         names = sorted(n for n in z.namelist() if n.endswith(".txt"))
         for i, name in enumerate(names):
@@ -132,6 +150,50 @@ def load_frames(frame_file=None):
         return None
 
 
+# ---------- 配乐 ----------
+
+def _find_player():
+    """按平台探测可用的音频播放命令，返回参数列表."""
+    for name, args in (
+        ("afplay", ["afplay"]),                                        # macOS 自带
+        ("ffplay", ["ffplay", "-nodisp", "-autoexit", "-loglevel", "quiet"]),
+        ("mpv", ["mpv", "--no-video", "--really-quiet"]),
+    ):
+        if shutil.which(name):
+            return args
+    return None
+
+
+def _maybe_get_music():
+    """返回 (播放命令, 音乐缓存路径)；不可用时返回 (None, None)。"""
+    player = _find_player()
+    if not player:
+        print("  未找到音频播放器（afplay/ffplay/mpv），将无声播放。")
+        return None, None
+    path = _music_cache_path()
+    if os.path.exists(path):
+        return player, path
+    print("  有配套背景音乐可下载（约 5.6MB），播放动画时自动配乐。")
+    try:
+        ans = input("  现在下载？[Y/n]：").strip().lower()
+    except (EOFError, KeyboardInterrupt):
+        print("\n  跳过音乐。")
+        return None, None
+    if ans in ("n", "no"):
+        return None, None
+    os.makedirs(_cache_dir(), exist_ok=True)
+    try:
+        _download_to(MUSIC_URL, path)
+        return player, path
+    except Exception as e:
+        print(f"  音乐下载失败（{e}），将无声播放。")
+        try:
+            os.unlink(path)
+        except OSError:
+            pass
+        return None, None
+
+
 def run():
     print("\n  [ Bad Apple!! ]")
     frames = load_frames(sys.argv[1] if len(sys.argv) > 1 else None)
@@ -139,9 +201,12 @@ def run():
         return
     print(f"  共 {len(frames)} 帧，约 {len(frames) / FPS:.0f} 秒 @ {FPS}fps")
 
+    player, music_path = _maybe_get_music()
+
     try:
         cols, lines = os.get_terminal_size()
-        if cols < FRAME_W or lines < FRAME_H:
+        # 个别非交互环境返回 0x0，视为无法检测
+        if 0 < cols < FRAME_W or 0 < lines < FRAME_H:
             print(f"  当前终端 {cols}x{lines}，建议至少 {FRAME_W}x{FRAME_H}，否则画面会滚动错位")
             try:
                 input("  回车继续，Ctrl+C 取消...")
@@ -158,6 +223,16 @@ def run():
         print("\n  已取消。\n")
         return
 
+    music_proc = None
+    if music_path:
+        try:
+            music_proc = subprocess.Popen(
+                player + [music_path],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            )
+        except OSError as e:
+            print(f"  音乐播放失败（{e}），继续无声播放。")
+
     sys.stdout.write("\033[?25l\033[2J")
     sys.stdout.flush()
     frame_time = 1 / FPS
@@ -165,8 +240,7 @@ def run():
     interrupted = False
     try:
         for i, frame in enumerate(frames):
-            # '@' 是暗像素，换成实心块播放（自备帧里若已是块字符则原样保留）
-            sys.stdout.write("\033[H" + frame.replace("@", "█"))
+            sys.stdout.write("\033[H" + frame.translate(CHAR_MAP))
             sys.stdout.flush()
             # 按时间轴对齐，渲染耗时不会累积拖慢整曲
             target = start + (i + 1) * frame_time
@@ -174,6 +248,13 @@ def run():
     except KeyboardInterrupt:
         interrupted = True
     finally:
+        if music_proc is not None:
+            # 播放器无需优雅退出，SIGTERM 对部分播放器无效，直接 SIGKILL
+            music_proc.kill()
+            try:
+                music_proc.wait(timeout=3)
+            except subprocess.TimeoutExpired:
+                pass
         sys.stdout.write(C_RESET + "\033[?25h\n")
         sys.stdout.flush()
         print("  已中断。" if interrupted else "  播放完毕。")
