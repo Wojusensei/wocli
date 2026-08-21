@@ -208,7 +208,7 @@ class Game:
             self._save_high()
 
 
-def main():
+def run():
     print(f"\n  {C_ORANGE}╭─ Claude Run ──────────────────────────────╮{C_RESET}")
     print(f"  {C_ORANGE}│{C_RESET}  橙色小人跑酷，按任意键开始            {C_ORANGE}│{C_RESET}")
     print(f"  {C_ORANGE}╰──────────────────────────────────────────╯{C_RESET}")
@@ -226,4 +226,4 @@ def main():
         restore_terminal()
 
 if __name__ == "__main__":
-    main()
+    run()

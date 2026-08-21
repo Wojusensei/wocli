@@ -9,7 +9,8 @@ terminal.init_terminal()
 from wocli.commands import (
     ip, port, tree, sys_cmd, path_cmd, gpa, luck, matrix,
     lolcat, time_cmd, hash_cmd, regex_cmd, typing_cmd,
-    progress, qr_cmd, goodbye, cow, glitch, battery, wifi_cmd, dead, chat
+    progress, qr_cmd, goodbye, cow, glitch, battery, wifi_cmd,
+    dead, chat, dino, badapple
 )
 
 COMMANDS = {
@@ -35,12 +36,14 @@ COMMANDS = {
     "wifi": (wifi_cmd.run, "WiFi 信息与信号评分"),
     "dead": (dead.run, "伪装终端死机"),
     "chat": (chat.run, "局域网聊天，和舍友用终端对话"),
+    "dino": (dino.run, "终端跑酷小游戏"),
+    "badapple": (badapple.run, "播放 Bad Apple ASCII 动画"),
 }
 
 HELP_GROUPS = {
     "学习": ["ip", "chat"],
     "效率": ["port", "tree", "sys", "path", "battery", "wifi"],
-    "发电": ["gpa", "luck", "matrix", "lolcat", "typing", "progress", "qr", "goodbye", "cow", "glitch", "dead"],
+    "发电": ["gpa", "luck", "matrix", "lolcat", "typing", "progress", "qr", "goodbye", "cow", "glitch", "dead", "dino", "badapple"],
     "coding": ["time", "hash", "regex"]
 }
 
