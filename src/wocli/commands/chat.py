@@ -13,7 +13,7 @@ def get_local_ip():
         ip = s.getsockname()[0]
         s.close()
         return ip
-    except:
+    except OSError:
         return "未知"
 
 
@@ -24,11 +24,17 @@ def receive_msg(sock, running):
             if not data:
                 break
             msg = data.decode("utf-8")
+            if msg.strip() == "/quit":
+                sys.stdout.write("\r\033[K  对方已退出聊天。\n")
+                sys.stdout.flush()
+                running[0] = False
+                break
             sys.stdout.write(f"\r\033[K  [对方] {msg}\n  > ")
             sys.stdout.flush()
-        except:
+        except OSError:
             if running[0]:
-                print("\n  连接已断开。")
+                sys.stdout.write("\n  连接已断开。\n")
+                sys.stdout.flush()
                 running[0] = False
             break
 
@@ -61,6 +67,9 @@ def run_client(host, port):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(10)
         sock.connect((host, port))
+        # 连接超时只用于 connect，聊天阶段改回阻塞式，
+        # 否则 recv 会在 10 秒无消息后抛 timeout 误判为断开
+        sock.settimeout(None)
         print(f"  已连接！")
         print("  开始聊天，输入 /quit 退出。\n")
         return sock
@@ -79,9 +88,13 @@ def chat_loop(sock, running):
                 break
             sock.sendall(msg.encode("utf-8"))
     except (EOFError, KeyboardInterrupt):
-        sock.sendall(b"/quit")
+        try:
+            sock.sendall(b"/quit")
+        except OSError:
+            pass
         running[0] = False
-    except:
+    except OSError:
+        print("\n  连接已断开。")
         running[0] = False
 
 
