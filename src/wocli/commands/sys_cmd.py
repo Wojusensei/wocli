@@ -2,6 +2,7 @@
 
 import platform
 import os
+import re
 import time
 import sys
 
@@ -23,8 +24,9 @@ def get_cpu_usage():
                     parts = line.split(":")
                     if len(parts) > 1:
                         nums = parts[1].split(",")
-                        user = float(nums[0].strip().replace("%", ""))
-                        sys_cpu = float(nums[1].strip().replace("%", "")) if len(nums) > 1 else 0
+                        # top 输出形如 "3.43% user, 9.27% sys"，取每段第一个词去掉百分号
+                        user = float(nums[0].strip().split()[0].replace("%", ""))
+                        sys_cpu = float(nums[1].strip().split()[0].replace("%", "")) if len(nums) > 1 else 0
                         return min(user + sys_cpu, 100)
         elif platform.system() == "Windows":
             import subprocess
@@ -60,13 +62,13 @@ def get_memory_usage():
                 capture_output=True, text=True
             )
             lines = result.stdout.strip().split("\n")
-            page_size = 4096
+            # 表头形如 "page size of 16384 bytes"，Apple Silicon 是 16KB 页
+            m = re.search(r"page size of (\d+) bytes", result.stdout)
+            page_size = int(m.group(1)) if m else 4096
             free = 0
             active = 0
             wired = 0
             for line in lines:
-                if "page size" in line:
-                    page_size = int(line.split(":")[1].strip())
                 if "Pages free" in line:
                     free = int(line.split(":")[1].strip().replace(".", ""))
                 if "Pages active" in line:

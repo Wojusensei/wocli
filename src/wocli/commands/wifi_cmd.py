@@ -42,25 +42,44 @@ def _wifi_via_macos_fallback():
     ssid, rssi, channel, bssid, security = "未知", -100, "未知", "未知", "未知"
 
     for iface in ("en0", "en1"):
-        result = subprocess.run(
-            ["networksetup", "-getairportnetwork", iface],
+        try:
+            result = subprocess.run(
+                ["networksetup", "-getairportnetwork", iface],
+                capture_output=True, text=True,
+            )
+            m = re.search(r"Current Wi-Fi Network:\s*(.+)", result.stdout)
+            if m:
+                ssid = m.group(1).strip()
+                break
+        except Exception:
+            pass
+
+    try:
+        prof = subprocess.run(
+            ["system_profiler", "SPAirPortDataType"],
             capture_output=True, text=True,
         )
-        m = re.search(r"Current Wi-Fi Network:\s*(.+)", result.stdout)
-        if m:
-            ssid = m.group(1).strip()
-            break
-
-    prof = subprocess.run(
-        ["system_profiler", "SPAirPortDataType"],
-        capture_output=True, text=True,
-    )
-    m = re.search(r"Signal:\s*(-?\d+)", prof.stdout)
-    if m:
-        rssi = int(m.group(1))
-    m = re.search(r"Channel:\s*(\d+)", prof.stdout)
-    if m:
-        channel = m.group(1)
+        # 只看第一段 Current Network Information 之后的当前网络块
+        sections = prof.stdout.split("Current Network Information:")
+        if len(sections) > 1:
+            current = sections[1]
+            # SSID 是块内第一行键值（无定位权限时会被系统替换成 <redacted>）
+            first = next((l for l in current.splitlines() if l.strip()), "")
+            name = first.strip().rstrip(":")
+            if name and "<redacted>" not in name.lower():
+                ssid = name
+            # 字段形如 "Signal / Noise: -48 dBm / -96 dBm"
+            m = re.search(r"Signal[^:\n]*:\s*(-?\d+)", current)
+            if m:
+                rssi = int(m.group(1))
+            m = re.search(r"Channel:\s*(\d+)", current)
+            if m:
+                channel = m.group(1)
+            m = re.search(r"Security:\s*(.+)", current)
+            if m:
+                security = m.group(1).strip()
+    except Exception:
+        pass
 
     return ssid, rssi, channel, bssid, security
 
