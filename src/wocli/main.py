@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """wocli - Main entry point."""
 
+import os
 import sys
 from wocli import terminal, __version__
 
@@ -65,6 +66,16 @@ def print_help():
 
 
 def main():
+    try:
+        _dispatch()
+    except BrokenPipeError:
+        # 管道下游提前关闭（如 wocli path | head），静默退出
+        devnull = os.open(os.devnull, os.O_WRONLY)
+        os.dup2(devnull, sys.stdout.fileno())
+        raise SystemExit(0)
+
+
+def _dispatch():
     if len(sys.argv) < 2:
         print_help()
         return
