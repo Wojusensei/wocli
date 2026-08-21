@@ -2,34 +2,67 @@
 import subprocess
 import platform
 import re
+import os
+
+AIRPORT = "/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport"
 
 
 def get_wifi_macos():
     try:
-        # 获取当前 WiFi 名称
-        info = subprocess.run(
-            ["/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport", "-I"],
-            capture_output=True, text=True
-        )
-        ssid = re.search(r"\s*SSID:\s*(.+)", info.stdout)
-        ssid = ssid.group(1).strip() if ssid else "未知"
-
-        rssi = re.search(r"\s*agrCtlRSSI:\s*(-?\d+)", info.stdout)
-        rssi = int(rssi.group(1)) if rssi else -100
-
-        channel = re.search(r"\s*channel:\s*(\d+)", info.stdout)
-        channel = channel.group(1) if channel else "未知"
-
-        # 获取加密方式和 MAC
-        bssid = re.search(r"\s*BSSID:\s*([0-9a-f:]+)", info.stdout)
-        bssid = bssid.group(1).strip() if bssid else "未知"
-
-        security = re.search(r"\s*link auth:\s*(.+)", info.stdout)
-        security = security.group(1).strip() if security else "未知"
-
-        return ssid, rssi, channel, bssid, security
-    except:
+        # macOS Sonoma(14)+ 已移除 airport 命令行工具，旧系统优先用它
+        if os.path.exists(AIRPORT):
+            return _wifi_via_airport()
+        return _wifi_via_macos_fallback()
+    except Exception:
         return "未知", -100, "未知", "未知", "未知"
+
+
+def _wifi_via_airport():
+    info = subprocess.run([AIRPORT, "-I"], capture_output=True, text=True)
+    ssid = re.search(r"\s*SSID:\s*(.+)", info.stdout)
+    ssid = ssid.group(1).strip() if ssid else "未知"
+
+    rssi = re.search(r"\s*agrCtlRSSI:\s*(-?\d+)", info.stdout)
+    rssi = int(rssi.group(1)) if rssi else -100
+
+    channel = re.search(r"\s*channel:\s*(\d+)", info.stdout)
+    channel = channel.group(1) if channel else "未知"
+
+    # 获取加密方式和 MAC
+    bssid = re.search(r"\s*BSSID:\s*([0-9a-f:]+)", info.stdout)
+    bssid = bssid.group(1).strip() if bssid else "未知"
+
+    security = re.search(r"\s*link auth:\s*(.+)", info.stdout)
+    security = security.group(1).strip() if security else "未知"
+
+    return ssid, rssi, channel, bssid, security
+
+
+def _wifi_via_macos_fallback():
+    ssid, rssi, channel, bssid, security = "未知", -100, "未知", "未知", "未知"
+
+    for iface in ("en0", "en1"):
+        result = subprocess.run(
+            ["networksetup", "-getairportnetwork", iface],
+            capture_output=True, text=True,
+        )
+        m = re.search(r"Current Wi-Fi Network:\s*(.+)", result.stdout)
+        if m:
+            ssid = m.group(1).strip()
+            break
+
+    prof = subprocess.run(
+        ["system_profiler", "SPAirPortDataType"],
+        capture_output=True, text=True,
+    )
+    m = re.search(r"Signal:\s*(-?\d+)", prof.stdout)
+    if m:
+        rssi = int(m.group(1))
+    m = re.search(r"Channel:\s*(\d+)", prof.stdout)
+    if m:
+        channel = m.group(1)
+
+    return ssid, rssi, channel, bssid, security
 
 
 def get_wifi_windows():
