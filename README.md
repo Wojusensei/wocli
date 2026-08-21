@@ -8,6 +8,8 @@
 
 2026.08.04 进一步优化了此问题
 
+2026.08.22 v0.4.0：修复干净安装缺少 colorama 依赖、Windows 下 sys/battery 数值错误、chat 十秒断线等问题，dino / badapple 命令正式注册
+
 ## 📦 安装
 
 请先确保你装了python，然后执行：
@@ -76,6 +78,10 @@ wocli cow 文字 : ASCII 牛说你说的话
 wocli glitch 文字 : 文字故障风效果
 
 wocli dead : 伪装终端死机，花屏、蓝屏、恢复
+
+wocli dino : 终端跑酷小游戏，空格跳跃，自带最高分记录
+
+wocli badapple [帧文件路径] : 播放 Bad Apple!! ASCII 动画，帧序列文件见命令内提示下载，也可通过环境变量 ```WOCLI_BADAPPLE_FRAMES``` 指定
 
 
 ### coding
