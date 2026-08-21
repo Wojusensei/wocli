@@ -5,6 +5,7 @@ import time
 import random
 import signal
 from wocli import terminal
+from wocli.utils import render_bar
 
 
 def run():
@@ -47,13 +48,12 @@ def run():
             progress += random.uniform(0.3, 2.5)
             if progress > 95:
                 progress = random.uniform(95, 99.5)
-            filled = int(width * progress / 100)
-            bar = "=" * filled + ">" + " " * (width - filled - 1)
+            bar = render_bar(progress / 100, width)
             eta = random.randint(1, 999)
             sys.stdout.write(f"\r  [{bar}] {progress:.1f}%  ETA: {eta}s")
             sys.stdout.flush()
             time.sleep(random.uniform(0.1, 0.5))
-    except:
+    except Exception:
         pass
     finally:
         terminal.show_cursor()

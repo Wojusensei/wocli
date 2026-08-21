@@ -20,10 +20,7 @@ if platform.system() == "Windows":
         if msvcrt.kbhit():
             ch = msvcrt.getch()
             if ch == b'\xe0': return ''
-            try:
-                return ch.decode('utf-8', errors='ignore')
-            except:
-                return ''
+            return ch.decode('utf-8', errors='ignore')
         return ''
 else:
     import termios, tty, fcntl
@@ -82,7 +79,7 @@ class Game:
         try:
             with open(p) as f:
                 return int(f.read())
-        except:
+        except (OSError, ValueError):
             return 0
 
     def _save_high(self):
@@ -92,7 +89,7 @@ class Game:
             try:
                 with open(p, "w") as f:
                     f.write(str(self.score))
-            except:
+            except OSError:
                 pass
 
     def jump(self):

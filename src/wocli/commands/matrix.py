@@ -24,7 +24,7 @@ class Matrix:
         reset = "\033[0m"
         try:
             cols = os.get_terminal_size().columns
-        except:
+        except OSError:
             cols = 80
 
         drops = [random.randint(0, 20) for _ in range(cols)]

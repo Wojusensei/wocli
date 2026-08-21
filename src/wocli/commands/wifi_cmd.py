@@ -84,9 +84,9 @@ def get_wifi_windows():
         bssid = re.search(r"BSSID\s*:\s*([0-9A-Fa-f:]+)", result.stdout)
         bssid = bssid.group(1).strip() if bssid else "未知"
 
-        security = "WPA2" 
+        security = "WPA2"
         return ssid, rssi, channel, bssid, security
-    except:
+    except Exception:
         return "未知", -100, "未知", "未知", "未知"
 
 
@@ -100,7 +100,7 @@ def get_wifi_linux():
         rssi = int(rssi.group(1)) if rssi else -100
 
         return ssid, rssi, "未知", "未知", "未知"
-    except:
+    except Exception:
         return "未知", -100, "未知", "未知", "未知"
 
 

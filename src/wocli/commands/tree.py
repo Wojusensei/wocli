@@ -12,7 +12,9 @@ def get_size_str(size_bytes):
     return f"{size_bytes:.1f} TB"
 
 
-def tree(dir_path, prefix="", max_depth=3, current_depth=0):
+def tree(dir_path, prefix="", max_depth=3, current_depth=0, stats=None):
+    if stats is None:
+        stats = [0, 0]  # [目录数, 文件数]，跨递归层级累计
     if current_depth >= max_depth:
         return
 
@@ -25,9 +27,6 @@ def tree(dir_path, prefix="", max_depth=3, current_depth=0):
         print(f"{prefix}[not found]")
         return
 
-    files = 0
-    dirs = 0
-
     for i, entry in enumerate(entries):
         full_path = os.path.join(dir_path, entry)
         is_last = (i == len(entries) - 1)
@@ -35,20 +34,20 @@ def tree(dir_path, prefix="", max_depth=3, current_depth=0):
         next_prefix = "    " if is_last else "|   "
 
         if os.path.isdir(full_path):
-            dirs += 1
+            stats[0] += 1
             print(f"{prefix}{connector}{entry}/")
-            tree(full_path, prefix + next_prefix, max_depth, current_depth + 1)
+            tree(full_path, prefix + next_prefix, max_depth, current_depth + 1, stats)
         else:
-            files += 1
+            stats[1] += 1
             try:
                 size = os.path.getsize(full_path)
                 size_str = get_size_str(size)
-            except Exception:
+            except OSError:
                 size_str = "?"
             print(f"{prefix}{connector}{entry} ({size_str})")
 
     if current_depth == 0:
-        print(f"\n  {dirs} 个目录, {files} 个文件")
+        print(f"\n  {stats[0]} 个目录, {stats[1]} 个文件")
 
 
 def run():

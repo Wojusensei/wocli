@@ -3,6 +3,7 @@ import sys
 import time
 import random
 from wocli import terminal
+from wocli.utils import render_bar
 
 MESSAGES = [
     "明天又是充满 bug 的一天",
@@ -25,9 +26,8 @@ def run():
 
     width = 30
     for i in range(width + 1):
-        bar = "=" * i + ">" + " " * (width - i)
         pct = int(i / width * 100)
-        sys.stdout.write(f"\r  [{bar}] {pct}%")
+        sys.stdout.write(f"\r  [{render_bar(i / width, width)}] {pct}%")
         sys.stdout.flush()
         time.sleep(0.08)
 

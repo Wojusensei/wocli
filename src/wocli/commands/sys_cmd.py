@@ -5,6 +5,9 @@ import os
 import time
 import sys
 
+from wocli import terminal
+from wocli.utils import format_bytes, render_bar
+
 
 def get_cpu_usage():
     """Get CPU usage percentage."""
@@ -118,20 +121,10 @@ def get_disk_usage():
         return 0, 1
 
 
-def format_bytes(size_bytes):
-    """Convert bytes to human readable."""
-    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
-        if size_bytes < 1024:
-            return f"{size_bytes:.1f}{unit}"
-        size_bytes /= 1024
-    return f"{size_bytes:.1f}PB"
-
-
 def draw_bar(label, used, total, width=30):
     """Draw an animated progress bar."""
     pct = used / total if total > 0 else 0
-    filled = int(width * pct)
-    bar = "=" * filled + ">" + " " * (width - filled - 1)
+    bar = render_bar(pct, width)
     used_str = format_bytes(used) if total > 1024 else f"{pct:.0%}"
     total_str = format_bytes(total) if total > 1024 else ""
     if total_str:
@@ -148,13 +141,15 @@ def run():
         mem_used, mem_total = get_memory_usage()
         disk_used, disk_total = get_disk_usage()
 
-        print(f"  CPU  {'=' * int(30 * cpu / 100):<30} {cpu:.0f}%")
-        print(draw_bar("内存", mem_used, mem_total))
-        print(draw_bar("磁盘", disk_used, disk_total))
+        print(f"  CPU  [{render_bar(cpu / 100, 30)}] {cpu:.0f}%\033[K")
+        print(draw_bar("内存", mem_used, mem_total) + "\033[K")
+        print(draw_bar("磁盘", disk_used, disk_total) + "\033[K")
 
         if _ < 2:
             time.sleep(1)
-            sys.stdout.write("\033[3A")
-            sys.stdout.flush()
+            if terminal.CAPS["ansi"]:
+                # 上移三行覆盖重绘；\033[K 清行尾防止上一轮残留字符
+                sys.stdout.write("\033[3A")
+                sys.stdout.flush()
 
     print()

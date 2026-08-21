@@ -29,11 +29,11 @@ def get_battery_macos():
             cycles = int(cycles_match.group(1)) if cycles_match else -1
             max_match = re.search(r"Maximum Capacity:\s*(\d+)%", health.stdout)
             max_cap = int(max_match.group(1)) if max_match else 100
-        except:
+        except Exception:
             cycles = -1
             max_cap = 100
         return percent, status, cycles, max_cap
-    except:
+    except Exception:
         return -1, "未知", -1, 100
 
 
@@ -68,7 +68,7 @@ def get_battery_linux():
             status_map = {"Discharging": "使用中", "Charging": "充电中", "Full": "已充满"}
             status = status_map.get(raw, raw)
         return percent, status, -1, 100
-    except:
+    except Exception:
         return -1, "未知", -1, 100
 
 
