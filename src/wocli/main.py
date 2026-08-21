@@ -2,7 +2,7 @@
 """wocli - Main entry point."""
 
 import sys
-from wocli import terminal
+from wocli import terminal, __version__
 
 terminal.init_terminal()
 
@@ -73,7 +73,7 @@ def main():
         return
 
     if command in ("version", "-v", "--version"):
-        print(f"wocli v0.3.0")   # 更新版本号在此
+        print(f"wocli v{__version__}")
         return
 
     if command in COMMANDS:
