@@ -6,7 +6,7 @@ import shutil
 
 def run():
     """Run the path command."""
-    paths = os.environ.get("PATH", "").split(":")
+    paths = os.environ.get("PATH", "").split(os.pathsep)
 
     print()
     print("  [ PATH Environment ]")

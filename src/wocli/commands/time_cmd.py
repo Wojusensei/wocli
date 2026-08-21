@@ -21,7 +21,8 @@ def run():
     ext = os.path.splitext(filepath)[1].lower()
 
     commands_map = {
-        ".py": ["python3", filepath],
+        # Windows 上通常没有 python3 命令，用当前解释器保证跨平台
+        ".py": [sys.executable, filepath],
         ".js": ["node", filepath],
         ".sh": ["bash", filepath],
         ".rb": ["ruby", filepath],
