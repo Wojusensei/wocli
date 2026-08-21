@@ -17,8 +17,7 @@ classifiers = [
 ]
 dependencies = [
     "qrcode>=7.4",
-    "Pillow>=10.0",
-    "requests>=2.31",
+    "colorama>=0.4",
 ]
 
 [project.scripts]

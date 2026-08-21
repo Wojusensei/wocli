@@ -2,7 +2,6 @@
 
 import sys
 import qrcode
-from qrcode.image.pil import PilImage
 
 
 def run():
