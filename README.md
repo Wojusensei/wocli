@@ -10,6 +10,8 @@
 
 2026.08.22 v0.4.0：修复干净安装缺少 colorama 依赖、Windows 下 sys/battery 数值错误、chat 十秒断线等问题，dino / badapple 命令正式注册
 
+2026.08.22 v0.4.1：修复 dino 六个致命 bug（障碍不生成、生成即崩溃、跳跃不可玩等）实现完整可玩；badapple 帧序列改为首次自动下载并缓存，无需手动找文件
+
 ## 📦 安装
 
 请先确保你装了python，然后执行：
@@ -79,9 +81,9 @@ wocli glitch 文字 : 文字故障风效果
 
 wocli dead : 伪装终端死机，花屏、蓝屏、恢复
 
-wocli dino : 终端跑酷小游戏，空格跳跃，自带最高分记录
+wocli dino : 终端跑酷小游戏，空格跳仙人掌、见高鸟别跳，自带最高分记录
 
-wocli badapple [帧文件路径] : 播放 Bad Apple!! ASCII 动画，帧序列文件见命令内提示下载，也可通过环境变量 ```WOCLI_BADAPPLE_FRAMES``` 指定
+wocli badapple : 播放 Bad Apple!! ASCII 动画（6572 帧），首次使用自动下载帧序列（约 4.6MB）并缓存到本地，之后离线播放；也可用 ```wocli badapple <帧目录/文件>``` 或环境变量 ```WOCLI_BADAPPLE_FRAMES``` 指定自备帧源
 
 
 ### coding
