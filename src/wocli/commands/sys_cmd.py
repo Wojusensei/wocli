@@ -79,13 +79,16 @@ def get_memory_usage():
                 ["wmic", "OS", "get", "TotalVisibleMemorySize,FreePhysicalMemory"],
                 capture_output=True, text=True
             )
-            lines = result.stdout.strip().split("\n")
-            if len(lines) > 1:
-                parts = lines[1].split()
-                if len(parts) >= 2:
-                    total = int(parts[0]) * 1024
-                    free_mem = int(parts[1]) * 1024
+            # wmic 输出的列按字母序排列，与请求顺序无关，必须按表头名取值
+            lines = [l.strip() for l in result.stdout.strip().split("\n") if l.strip()]
+            if len(lines) >= 2:
+                info = dict(zip(lines[0].split(), lines[1].split()))
+                try:
+                    total = int(info["TotalVisibleMemorySize"]) * 1024
+                    free_mem = int(info["FreePhysicalMemory"]) * 1024
                     return total - free_mem, total
+                except (KeyError, ValueError):
+                    pass
         else:
             with open("/proc/meminfo", "r") as f:
                 meminfo = f.read()

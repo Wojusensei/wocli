@@ -46,12 +46,16 @@ def get_battery_windows():
         lines = [l.strip() for l in result.stdout.split("\n") if l.strip()]
         if len(lines) < 2:
             return -1, "未知", -1, 100
-        parts = lines[1].split()
-        percent = int(parts[0]) if parts else -1
+        # wmic 输出的列按字母序排列，与请求顺序无关，必须按表头名取值
+        info = dict(zip(lines[0].split(), lines[1].split()))
+        try:
+            percent = int(info.get("EstimatedChargeRemaining", -1))
+        except ValueError:
+            percent = -1
         status_map = {"1": "使用中", "2": "充电中", "3": "已充满"}
-        status = status_map.get(parts[1], "未知") if len(parts) > 1 else "未知"
+        status = status_map.get(info.get("BatteryStatus", ""), "未知")
         return percent, status, -1, 100
-    except:
+    except Exception:
         return -1, "未知", -1, 100
 
 
