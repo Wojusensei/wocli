@@ -15,9 +15,12 @@ def run():
     # 生成二维码矩阵
     qr = qrcode.QRCode(
         version=None,
-        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        # M 级纠错（15%）：手机拍屏幕有摩尔纹和终端行间隙条纹，L 级扛不住
+        error_correction=qrcode.constants.ERROR_CORRECT_M,
         box_size=1,
-        border=2,
+        # 静区必须 >=4 模块（QR 标准 ISO/IEC 18004），不足会被微信等
+        # 严格解码器直接判为无法识别
+        border=4,
     )
     qr.add_data(text)
     qr.make(fit=True)
@@ -46,4 +49,5 @@ def run():
 
     print()
     print(f"  扫描上方二维码查看内容")
+    print(f"  （扫不出时：调大终端字号或换等宽字体，块字符需填满行高）")
     print()
