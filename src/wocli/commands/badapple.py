@@ -179,46 +179,81 @@ def load_frames(frame_file=None):
 
 # ---------- 配乐 ----------
 
-def _find_player():
-    """按平台探测可用的音频播放命令，返回参数列表."""
+# Windows 无内置命令行 mp3 播放器，用系统自带 WMP 的 COM 接口兜底
+# （WMP 异步播放，进程需存活到播放结束，playState 1 = Stopped）
+_WMP_PS = (
+    "$ErrorActionPreference='Stop';"
+    "$p = New-Object -ComObject WMPlayer.OCX.7;"
+    "$p.URL = '{path}';"
+    "$p.controls.play();"
+    "while ($p.playState -ne 1) { Start-Sleep -Milliseconds 300 }"
+)
+
+
+def _start_music(music_path):
+    """用系统可用的播放器启动音乐，返回 Popen；找不到可用方式返回 None。"""
     for name, args in (
         ("afplay", ["afplay"]),                                        # macOS 自带
         ("ffplay", ["ffplay", "-nodisp", "-autoexit", "-loglevel", "quiet"]),
         ("mpv", ["mpv", "--no-video", "--really-quiet"]),
     ):
         if shutil.which(name):
-            return args
+            try:
+                return subprocess.Popen(
+                    args + [music_path],
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                )
+            except OSError:
+                return None
+    if platform.system() == "Windows" and shutil.which("powershell"):
+        script = _WMP_PS.replace("{path}", music_path.replace("'", "''"))
+        try:
+            proc = subprocess.Popen(
+                ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            )
+        except OSError:
+            return None
+        # WMP COM 创建失败时 powershell 会立即退出（如精简版系统移除了 WMP）
+        time.sleep(1.0)
+        if proc.poll() is None:
+            return proc
+        return None
     return None
 
 
 def _maybe_get_music():
-    """返回 (播放命令, 音乐缓存路径)；不可用时返回 (None, None)。"""
-    player = _find_player()
-    if not player:
-        print("  未找到音频播放器（afplay/ffplay/mpv），将无声播放。")
-        return None, None
+    """返回音乐缓存路径；不可用/未下载时返回 None。"""
     path = _music_cache_path()
-    if os.path.exists(path):
-        return player, path
-    print("  有配套背景音乐可下载（约 5.6MB），播放动画时自动配乐。")
-    try:
-        ans = input("  现在下载？[Y/n]：").strip().lower()
-    except (EOFError, KeyboardInterrupt):
-        print("\n  跳过音乐。")
-        return None, None
-    if ans in ("n", "no"):
-        return None, None
-    os.makedirs(_cache_dir(), exist_ok=True)
-    try:
-        _download_to(MUSIC_URL, path)
-        return player, path
-    except Exception as e:
-        print(f"  音乐下载失败（{e}），将无声播放。")
+    if not os.path.exists(path):
+        print("  有配套背景音乐可下载（约 5.6MB），播放动画时自动配乐。")
         try:
-            os.unlink(path)
-        except OSError:
-            pass
-        return None, None
+            ans = input("  现在下载？[Y/n]：").strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            print("\n  跳过音乐。")
+            return None
+        if ans in ("n", "no"):
+            return None
+        os.makedirs(_cache_dir(), exist_ok=True)
+        try:
+            _download_to(MUSIC_URL, path)
+        except Exception as e:
+            print(f"  音乐下载失败（{e}），将无声播放。")
+            try:
+                os.unlink(path)
+            except OSError:
+                pass
+            return None
+    if shutil.which("afplay") or shutil.which("ffplay") or shutil.which("mpv"):
+        return path
+    if platform.system() == "Windows" and shutil.which("powershell"):
+        return path  # 走 WMP COM 兜底
+    print("  未找到音频播放器（afplay/ffplay/mpv），将无声播放。")
+    if platform.system() == "Windows":
+        print("  提示：安装 ffmpeg 后可自动配乐：winget install Gyan.FFmpeg")
+    elif platform.system() == "Linux":
+        print("  提示：安装 ffmpeg 或 mpv 后可自动配乐，例如：sudo apt install ffmpeg")
+    return None
 
 
 def run():
@@ -233,7 +268,7 @@ def run():
     fps = max(1, min(60, fps))
     print(f"  共 {len(frames)} 帧，约 {len(frames) / fps:.0f} 秒 @ {fps}fps")
 
-    player, music_path = _maybe_get_music()
+    player, music_path = None, _maybe_get_music()
 
     try:
         cols, lines = os.get_terminal_size()
@@ -278,13 +313,9 @@ def run():
 
     music_proc = None
     if music_path:
-        try:
-            music_proc = subprocess.Popen(
-                player + [music_path],
-                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-            )
-        except OSError as e:
-            print(f"  音乐播放失败（{e}），继续无声播放。")
+        music_proc = _start_music(music_path)
+        if music_proc is None:
+            print("  音频播放器启动失败，继续无声播放。")
 
     # 进入备用屏幕缓冲区（vim/htop 同款）：Terminal.app 等纯 CPU 渲染的
     # 终端在备用屏下处理路径更干净，且动画不会污染正常会话的滚动缓冲
