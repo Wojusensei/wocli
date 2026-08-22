@@ -8,9 +8,7 @@
 
 2026.08.04 进一步优化了此问题
 
-2026.08.22 v0.4.0：修复干净安装缺少 colorama 依赖、Windows 下 sys/battery 数值错误、chat 十秒断线等问题，dino / badapple 命令正式注册
-
-2026.08.22 v0.4.1：修复 dino 六个致命 bug（障碍不生成、生成即崩溃、跳跃不可玩等）实现完整可玩；badapple 帧序列改为首次自动下载并缓存，无需手动找文件
+2026.08.22 v0.4.0：修复干净安装缺少 colorama 依赖、Windows 下 sys/battery 数值错误、chat 十秒断线等问题， badapple 命令注册
 
 2026.08.22 v0.5.0：移除 dino（实测体验不达标）；badapple 灰度字符统一渲染为 ░▒▓█ 块字符修复乱码/错位，新增可选背景音乐（自动探测 afplay/ffplay/mpv，随动画启停）
 
