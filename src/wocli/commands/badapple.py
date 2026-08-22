@@ -18,6 +18,9 @@ import tempfile
 import time
 import urllib.request
 import zipfile
+from itertools import groupby
+
+from wocli import terminal
 
 C_RESET = "\033[0m"
 FPS = 30
@@ -26,13 +29,37 @@ FRAME_FILE = os.path.join(os.path.dirname(__file__), "frames.txt")
 ZIP_URL = "https://raw.githubusercontent.com/TryCaze/Bad-Apple-ASCII/main/ASCIIframes.zip"
 MUSIC_URL = "https://raw.githubusercontent.com/TryCaze/Bad-Apple-ASCII/main/music/badapple.mp3"
 
-# 帧源是 ASCII 灰度字符（亮->暗大致为 : - + = * # % @），映射成块字符，
-# 避免各种字符在不同字体下宽高不一造成的错位和"乱码"感
+# 帧源是 ASCII 灰度字符（亮->暗大致为 : - + = * # % @），映射成块字符
 CHAR_MAP = str.maketrans({
     "@": "█", "%": "▓", "#": "▓",
     "*": "▒", "=": "▒", "+": "▒",
     "-": "░", ":": "░",
 })
+
+# 块字符 ░▒▓█ 是 Unicode 宽度模糊字符，中文环境下不少终端渲染成两列宽，
+# 一行 100 字符折成 200 列造成画面上下错位抖动；空格在任何终端都是一列，
+# 因此默认用"背景色画空格"渲染，块字符仅作无色终端的降级方案
+
+# 原帧 9 级 ASCII 灰度映射到 256 色。色档与仓库 v0.5.0 版本完全一致
+# （8 级灰度并成 4 档 + 背景近黑），仅渲染载体从块字符换成背景色空格
+GRAY_BG = {
+    "@": "231", "%": "250", "#": "250",
+    "*": "244", "=": "244", "+": "244",
+    "-": "238", ":": "238", " ": "233",
+}
+
+
+def render_bg_lines(frame):
+    """把原始灰度帧转成行程编码的背景色空格行列表（列宽恒为一格）。"""
+    lines = []
+    for line in frame.split("\n"):
+        parts = []
+        for ch, grp in groupby(line):
+            n = sum(1 for _ in grp)
+            parts.append(f"\033[48;5;{GRAY_BG.get(ch, '232')}m{' ' * n}")
+        parts.append("\033[49m")
+        lines.append("".join(parts))
+    return lines
 
 
 def _cache_dir():
@@ -199,15 +226,21 @@ def run():
     frames = load_frames(sys.argv[1] if len(sys.argv) > 1 else None)
     if not frames:
         return
-    print(f"  共 {len(frames)} 帧，约 {len(frames) / FPS:.0f} 秒 @ {FPS}fps")
+    try:
+        fps = int(os.environ.get("WOCLI_BADAPPLE_FPS", "30") or 30)
+    except ValueError:
+        fps = 30
+    fps = max(1, min(60, fps))
+    print(f"  共 {len(frames)} 帧，约 {len(frames) / fps:.0f} 秒 @ {fps}fps")
 
     player, music_path = _maybe_get_music()
 
     try:
         cols, lines = os.get_terminal_size()
-        # 个别非交互环境返回 0x0，视为无法检测
-        if 0 < cols < FRAME_W or 0 < lines < FRAME_H:
-            print(f"  当前终端 {cols}x{lines}，建议至少 {FRAME_W}x{FRAME_H}，否则画面会滚动错位")
+        # 个别非交互环境返回 0x0，视为无法检测；要求比帧高多一行余量，
+        # 光标停在终端最后一行行尾时部分终端会先滚动再执行光标定位
+        if 0 < cols < FRAME_W or 0 < lines < FRAME_H + 1:
+            print(f"  当前终端 {cols}x{lines}，建议至少 {FRAME_W}x{FRAME_H + 1}，否则画面会滚动错位")
             try:
                 input("  回车继续，Ctrl+C 取消...")
             except (EOFError, KeyboardInterrupt):
@@ -223,6 +256,26 @@ def run():
         print("\n  已取消。\n")
         return
 
+    # 渲染模式：默认背景色画空格（列宽恒定，杜绝宽字符折行抖动）；
+    # 无色终端降级为块字符；WOCLI_BADAPPLE_BG=1/0 可强制指定
+    use_bg = os.environ.get("WOCLI_BADAPPLE_BG")
+    if use_bg is None:
+        use_bg = "1" if terminal.CAPS.get("color_depth") in ("truecolor", "256") else "0"
+    if use_bg == "0":
+        print("  使用块字符渲染（当前终端不支持 256 色，部分环境下可能错位）")
+
+    rewind = f"\033[K\033[{FRAME_H - 1}A\r"
+    # 预渲染：加载期把全部帧编码为 bytes，播放循环只剩内存写入，
+    # 把 CPU 尽量让给终端渲染和音频解码，减少更新节奏抖动
+    print("  正在准备画面...", end="", flush=True)
+    bg_mode = use_bg == "1"
+    rendered = []
+    for frame in frames:
+        body = "\n".join(render_bg_lines(frame)) if bg_mode else frame.translate(CHAR_MAP)
+        rendered.append(("\033[H" + body + rewind).encode("utf-8"))
+    frames = rendered
+    print(" 完成")
+
     music_proc = None
     if music_path:
         try:
@@ -233,15 +286,18 @@ def run():
         except OSError as e:
             print(f"  音乐播放失败（{e}），继续无声播放。")
 
-    sys.stdout.write("\033[?25l\033[2J")
+    # 进入备用屏幕缓冲区（vim/htop 同款）：Terminal.app 等纯 CPU 渲染的
+    # 终端在备用屏下处理路径更干净，且动画不会污染正常会话的滚动缓冲
+    sys.stdout.write("\033[?1049h\033[?25l")
     sys.stdout.flush()
-    frame_time = 1 / FPS
+    frame_time = 1 / fps
     start = time.monotonic()
     interrupted = False
+    out_write = sys.stdout.buffer.write
     try:
         for i, frame in enumerate(frames):
-            sys.stdout.write("\033[H" + frame.translate(CHAR_MAP))
-            sys.stdout.flush()
+            out_write(frame)
+            sys.stdout.buffer.flush()
             # 按时间轴对齐，渲染耗时不会累积拖慢整曲
             target = start + (i + 1) * frame_time
             time.sleep(max(0.0, target - time.monotonic()))
@@ -255,6 +311,6 @@ def run():
                 music_proc.wait(timeout=3)
             except subprocess.TimeoutExpired:
                 pass
-        sys.stdout.write(C_RESET + "\033[?25h\n")
+        sys.stdout.write(C_RESET + "\033[?25h\033[?1049l")
         sys.stdout.flush()
         print("  已中断。" if interrupted else "  播放完毕。")
