@@ -85,7 +85,7 @@ wocli glitch 文字 : 文字故障风效果
 
 wocli dead : 伪装终端死机，花屏、蓝屏、恢复
 
-wocli badapple : 播放 Bad Apple!! ASCII 动画（6572 帧），首次使用自动下载帧序列（约 4.6MB）并缓存到本地，之后离线播放；可选下载配套背景音乐同步播放；也可用 ```wocli badapple <帧目录/文件>``` 或环境变量 ```WOCLI_BADAPPLE_FRAMES``` 指定自备帧源
+wocli badapple : 播放 Bad Apple!! ASCII 动画（6572 帧），首次使用自动下载帧序列（约 4.6MB）并缓存到本地，之后离线播放；可选下载配套背景音乐同步播放；也可用 ```wocli badapple <帧目录/文件>``` 或环境变量 ```WOCLI_BADAPPLE_FRAMES``` 指定自备帧源。这是核心功能awa
 
 
 ### coding
