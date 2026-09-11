@@ -43,7 +43,8 @@ def run():
     elapsed = end - start
     correct_chars = sum(1 for a, b in zip(user_input, text) if a == b)
     accuracy = correct_chars / len(text) * 100 if text else 0
-    word_count = len(text.split())
+    # 词数按实际打出来的算，原文词数会让打一半也拿满 WPM
+    word_count = len(user_input.split())
     minutes = elapsed / 60
     wpm = word_count / minutes if minutes > 0 else 0
 

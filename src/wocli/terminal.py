@@ -67,8 +67,10 @@ def colored(text, r=None, g=None, b=None, ansi_code=None):
         if CAPS["color_depth"] in ("truecolor", "256"):
             return f"\033[38;5;{ansi_code}m{text}\033[0m"
         elif CAPS["color_depth"] == "16":
-            base = ansi_code % 16 if ansi_code < 256 else 7
-            return f"{getattr(Fore, COLORS_16[base])}{text}{Style.RESET_ALL}"
+            # 直接取模会把橙黄系映成 BLACK（如 208 % 16 == 0），深底终端上黑字不可见，
+            # 统一走 256->16 的近似映射
+            color_name = map_256_to_16(ansi_code)
+            return f"{getattr(Fore, color_name)}{text}{Style.RESET_ALL}"
         else:
             return text
 
@@ -89,8 +91,10 @@ def colored(text, r=None, g=None, b=None, ansi_code=None):
 def rgb_to_256(r, g, b):
     if r == g == b:
         if r < 8: return 16
-        if r > 248: return 231
-        return int(232 + (r - 8) / 10)
+        # 灰度段 232-255 只覆盖到 238，再往上归入白（231），
+        # 否则会算出 256 这种非法色码
+        if r >= 239: return 231
+        return 232 + (r - 8) // 10
     r6 = int(r / 51)
     g6 = int(g / 51)
     b6 = int(b / 51)
@@ -116,6 +120,16 @@ def map_256_to_16(code):
     intensity = (r + g + b) / 3
     if intensity > 4: return "WHITE"
     if intensity > 2: return "GREEN" if g > r and g > b else "YELLOW" if r > 2 and g > 2 else "CYAN" if g > 2 and b > 2 else "MAGENTA" if r > 2 and b > 2 else "RED" if r > 3 else "BLUE"
+    # 偏暗的颜色按最强通道给色，纯红/纯蓝这类饱和色不能一律压成 BLACK
+    if r > 3: return "RED"
+    if g > 3: return "GREEN"
+    if b > 3: return "BLUE"
+    if r > 2 and g > 2: return "YELLOW"
+    if r > 2 and b > 2: return "MAGENTA"
+    if g > 2 and b > 2: return "CYAN"
+    if r > 2: return "RED"
+    if g > 2: return "GREEN"
+    if b > 2: return "BLUE"
     return "BLACK"
 
 

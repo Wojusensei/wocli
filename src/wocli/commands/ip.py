@@ -54,6 +54,20 @@ def get_gateway_macos():
 def get_gateway_windows():
     """Get default gateway on Windows."""
     try:
+        # Get-NetRoute 不随系统语言变；ipconfig 的 "Default Gateway"
+        # 在中文系统里是"默认网关"，只能当回退
+        result = subprocess.run(
+            ["powershell", "-NoProfile", "-Command",
+             "(Get-NetRoute -DestinationPrefix 0.0.0.0/0 | "
+             "Sort-Object RouteMetric | Select-Object -First 1).NextHop"],
+            capture_output=True, text=True
+        )
+        val = result.stdout.strip()
+        if val:
+            return val
+    except Exception:
+        pass
+    try:
         result = subprocess.run(
             ["ipconfig"],
             capture_output=True, text=True
