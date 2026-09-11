@@ -18,19 +18,29 @@ def get_local_ip():
 
 
 def receive_msg(sock, running):
+    # 消息按 \n 分帧：recv 1024 可能截断长消息甚至截断 UTF-8 多字节字符，
+    # 直接 decode 会抛 UnicodeDecodeError 让接收线程崩掉
+    buf = b""
     while running[0]:
         try:
             data = sock.recv(1024)
             if not data:
+                if running[0]:
+                    sys.stdout.write("\n  连接已断开。\n")
+                    sys.stdout.flush()
+                    running[0] = False
                 break
-            msg = data.decode("utf-8")
-            if msg.strip() == "/quit":
-                sys.stdout.write("\r\033[K  对方已退出聊天。\n")
+            buf += data
+            while b"\n" in buf:
+                raw, buf = buf.split(b"\n", 1)
+                msg = raw.decode("utf-8", "replace")
+                if msg.strip() == "/quit":
+                    sys.stdout.write("\r\033[K  对方已退出聊天。\n")
+                    sys.stdout.flush()
+                    running[0] = False
+                    return
+                sys.stdout.write(f"\r\033[K  [对方] {msg}\n  > ")
                 sys.stdout.flush()
-                running[0] = False
-                break
-            sys.stdout.write(f"\r\033[K  [对方] {msg}\n  > ")
-            sys.stdout.flush()
         except OSError:
             if running[0]:
                 sys.stdout.write("\n  连接已断开。\n")
@@ -82,14 +92,16 @@ def chat_loop(sock, running):
     try:
         while running[0]:
             msg = input("  > ")
+            if not msg.strip():
+                continue
             if msg.strip() == "/quit":
-                sock.sendall(b"/quit")
+                sock.sendall(b"/quit\n")
                 running[0] = False
                 break
-            sock.sendall(msg.encode("utf-8"))
+            sock.sendall(msg.encode("utf-8") + b"\n")
     except (EOFError, KeyboardInterrupt):
         try:
-            sock.sendall(b"/quit")
+            sock.sendall(b"/quit\n")
         except OSError:
             pass
         running[0] = False
