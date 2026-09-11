@@ -204,7 +204,8 @@ def _start_music(music_path):
                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                 )
             except OSError:
-                return None
+                # 这个起不来还有后面的候选，不能直接放弃
+                continue
     if platform.system() == "Windows" and shutil.which("powershell"):
         script = _WMP_PS.replace("{path}", music_path.replace("'", "''"))
         try:

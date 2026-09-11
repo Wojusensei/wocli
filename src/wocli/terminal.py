@@ -120,6 +120,16 @@ def map_256_to_16(code):
     intensity = (r + g + b) / 3
     if intensity > 4: return "WHITE"
     if intensity > 2: return "GREEN" if g > r and g > b else "YELLOW" if r > 2 and g > 2 else "CYAN" if g > 2 and b > 2 else "MAGENTA" if r > 2 and b > 2 else "RED" if r > 3 else "BLUE"
+    # 偏暗的颜色按最强通道给色，纯红/纯蓝这类饱和色不能一律压成 BLACK
+    if r > 3: return "RED"
+    if g > 3: return "GREEN"
+    if b > 3: return "BLUE"
+    if r > 2 and g > 2: return "YELLOW"
+    if r > 2 and b > 2: return "MAGENTA"
+    if g > 2 and b > 2: return "CYAN"
+    if r > 2: return "RED"
+    if g > 2: return "GREEN"
+    if b > 2: return "BLUE"
     return "BLACK"
 
 
