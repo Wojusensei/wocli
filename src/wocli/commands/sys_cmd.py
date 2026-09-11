@@ -31,13 +31,15 @@ def get_cpu_usage():
                         return min(user + sys_cpu, 100)
         elif platform.system() == "Windows":
             import subprocess
+            # wmic 从 Win11 24H2 起被系统移除，改用 PowerShell CIM
             result = subprocess.run(
-                ["wmic", "cpu", "get", "loadpercentage"],
+                ["powershell", "-NoProfile", "-Command",
+                 "(Get-CimInstance Win32_Processor | Select-Object -First 1).LoadPercentage"],
                 capture_output=True, text=True
             )
-            lines = result.stdout.strip().split("\n")
-            if len(lines) > 1:
-                return float(lines[1].strip())
+            out = result.stdout.strip()
+            if out:
+                return min(float(out.split()[0]), 100)
         else:
             import subprocess
             result = subprocess.run(
@@ -89,20 +91,18 @@ def get_memory_usage():
             return used, total
         elif platform.system() == "Windows":
             import subprocess
+            # wmic 从 Win11 24H2 起被系统移除，改用 PowerShell CIM，数值单位 KB
             result = subprocess.run(
-                ["wmic", "OS", "get", "TotalVisibleMemorySize,FreePhysicalMemory"],
+                ["powershell", "-NoProfile", "-Command",
+                 "$os = Get-CimInstance Win32_OperatingSystem;"
+                 "'{0} {1}' -f $os.TotalVisibleMemorySize, $os.FreePhysicalMemory"],
                 capture_output=True, text=True
             )
-            # wmic 输出的列按字母序排列，与请求顺序无关，必须按表头名取值
-            lines = [l.strip() for l in result.stdout.strip().split("\n") if l.strip()]
-            if len(lines) >= 2:
-                info = dict(zip(lines[0].split(), lines[1].split()))
-                try:
-                    total = int(info["TotalVisibleMemorySize"]) * 1024
-                    free_mem = int(info["FreePhysicalMemory"]) * 1024
-                    return total - free_mem, total
-                except (KeyError, ValueError):
-                    pass
+            parts = result.stdout.split()
+            if len(parts) >= 2:
+                total = int(float(parts[0])) * 1024
+                free_mem = int(float(parts[1])) * 1024
+                return total - free_mem, total
         else:
             with open("/proc/meminfo", "r") as f:
                 meminfo = f.read()
