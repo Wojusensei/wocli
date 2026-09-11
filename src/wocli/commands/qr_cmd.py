@@ -3,6 +3,8 @@
 import sys
 import qrcode
 
+from wocli import terminal
+
 
 def run():
     """运行 qr 命令."""
@@ -30,22 +32,30 @@ def run():
     print(f"  [ QR Code: {text[:40]}{'...' if len(text) > 40 else ''} ]")
     print()
 
-    # Unicode 
+    # Unicode 半块字符逐行渲染，两个模块拼进一个字符。
+    # 颜色不能依赖终端主题：深色背景下会输出反色码，多数扫码器不认。
+    # 用 ANSI 固定"白底黑块"（黑前景画半块，白背景当浅色模块），
+    # 不支持 ANSI 的终端退回默认配色
+    if terminal.CAPS.get("ansi"):
+        color_on, color_off = "\033[30;107m", "\033[0m"
+    else:
+        color_on = color_off = ""
+
     for y in range(0, len(modules), 2):
-        line = "  "
+        line = "  " + color_on
         for x in range(len(modules[0])):
-            upper = modules[y][x] if y < len(modules) else False
+            upper = modules[y][x]
             lower = modules[y + 1][x] if y + 1 < len(modules) else False
 
             if upper and lower:
-                line += "\u2588"  
-            elif upper and not lower:
-                line += "\u2580"  
-            elif not upper and lower:
-                line += "\u2584"  
+                line += "\u2588"
+            elif upper:
+                line += "\u2580"
+            elif lower:
+                line += "\u2584"
             else:
                 line += " "
-        print(line)
+        print(line + color_off)
 
     print()
     print(f"  扫描上方二维码查看内容")
