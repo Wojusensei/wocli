@@ -3,6 +3,7 @@
 import platform
 import os
 import re
+import shutil
 import time
 import sys
 
@@ -30,13 +31,15 @@ def get_cpu_usage():
                         return min(user + sys_cpu, 100)
         elif platform.system() == "Windows":
             import subprocess
+            # wmic 从 Win11 24H2 起被系统移除，改用 PowerShell CIM
             result = subprocess.run(
-                ["wmic", "cpu", "get", "loadpercentage"],
+                ["powershell", "-NoProfile", "-Command",
+                 "(Get-CimInstance Win32_Processor | Select-Object -First 1).LoadPercentage"],
                 capture_output=True, text=True
             )
-            lines = result.stdout.strip().split("\n")
-            if len(lines) > 1:
-                return float(lines[1].strip())
+            out = result.stdout.strip()
+            if out:
+                return min(float(out.split()[0]), 100)
         else:
             import subprocess
             result = subprocess.run(
@@ -45,8 +48,16 @@ def get_cpu_usage():
             )
             for line in result.stdout.split("\n"):
                 if "Cpu(s)" in line:
-                    parts = line.split(":")[1].split(",")
-                    return float(parts[0].strip().replace("%us", "").replace("%id", ""))
+                    # procps 输出形如 "%Cpu(s):  5.9 us,  2.4 sy, ... 91.2 id"，
+                    # 旧版则带百分号（"5.9%us"），按字段后缀取 us/sys 两段求和
+                    user = sys_cpu = 0.0
+                    for field in line.split(":", 1)[-1].split(","):
+                        field = field.strip()
+                        if field.endswith("us"):
+                            user = float(field[:-2].strip().rstrip("%"))
+                        elif field.endswith("sy"):
+                            sys_cpu = float(field[:-2].strip().rstrip("%"))
+                    return min(user + sys_cpu, 100)
     except Exception:
         pass
     return 0
@@ -80,20 +91,18 @@ def get_memory_usage():
             return used, total
         elif platform.system() == "Windows":
             import subprocess
+            # wmic 从 Win11 24H2 起被系统移除，改用 PowerShell CIM，数值单位 KB
             result = subprocess.run(
-                ["wmic", "OS", "get", "TotalVisibleMemorySize,FreePhysicalMemory"],
+                ["powershell", "-NoProfile", "-Command",
+                 "$os = Get-CimInstance Win32_OperatingSystem;"
+                 "'{0} {1}' -f $os.TotalVisibleMemorySize, $os.FreePhysicalMemory"],
                 capture_output=True, text=True
             )
-            # wmic 输出的列按字母序排列，与请求顺序无关，必须按表头名取值
-            lines = [l.strip() for l in result.stdout.strip().split("\n") if l.strip()]
-            if len(lines) >= 2:
-                info = dict(zip(lines[0].split(), lines[1].split()))
-                try:
-                    total = int(info["TotalVisibleMemorySize"]) * 1024
-                    free_mem = int(info["FreePhysicalMemory"]) * 1024
-                    return total - free_mem, total
-                except (KeyError, ValueError):
-                    pass
+            parts = result.stdout.split()
+            if len(parts) >= 2:
+                total = int(float(parts[0])) * 1024
+                free_mem = int(float(parts[1])) * 1024
+                return total - free_mem, total
         else:
             with open("/proc/meminfo", "r") as f:
                 meminfo = f.read()
@@ -114,11 +123,9 @@ def get_memory_usage():
 def get_disk_usage():
     """Get disk usage."""
     try:
-        stat = os.statvfs(os.path.expanduser("~"))
-        total = stat.f_frsize * stat.f_blocks
-        free = stat.f_frsize * stat.f_bfree
-        used = total - free
-        return used, total
+        # shutil.disk_usage 三个平台都可用，os.statvfs 在 Windows 上不存在
+        usage = shutil.disk_usage(os.path.expanduser("~"))
+        return usage.used, usage.total
     except Exception:
         return 0, 1
 

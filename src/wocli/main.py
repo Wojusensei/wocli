@@ -72,6 +72,10 @@ def main():
         devnull = os.open(os.devnull, os.O_WRONLY)
         os.dup2(devnull, sys.stdout.fileno())
         raise SystemExit(0)
+    except KeyboardInterrupt:
+        # 各命令内部没拦的 Ctrl+C 在这里兜底，不打堆栈
+        print("\n  已退出。")
+        raise SystemExit(130)
 
 
 def _dispatch():

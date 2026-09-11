@@ -39,21 +39,23 @@ def get_battery_macos():
 
 def get_battery_windows():
     try:
+        # wmic 从 Win11 24H2 起被系统移除，改用 PowerShell CIM
         result = subprocess.run(
-            ["wmic", "path", "Win32_Battery", "get", "EstimatedChargeRemaining,EstimatedRunTime,BatteryStatus"],
+            ["powershell", "-NoProfile", "-Command",
+             "$b = Get-CimInstance Win32_Battery | Select-Object -First 1;"
+             "'{0} {1}' -f $b.EstimatedChargeRemaining, $b.BatteryStatus"],
             capture_output=True, text=True
         )
-        lines = [l.strip() for l in result.stdout.split("\n") if l.strip()]
-        if len(lines) < 2:
+        parts = result.stdout.split()
+        if len(parts) < 2:
             return -1, "未知", -1, 100
-        # wmic 输出的列按字母序排列，与请求顺序无关，必须按表头名取值
-        info = dict(zip(lines[0].split(), lines[1].split()))
         try:
-            percent = int(info.get("EstimatedChargeRemaining", -1))
+            percent = int(float(parts[0]))
         except ValueError:
             percent = -1
-        status_map = {"1": "使用中", "2": "充电中", "3": "已充满"}
-        status = status_map.get(info.get("BatteryStatus", ""), "未知")
+        # Win32_Battery.BatteryStatus：1=放电中 2=接通电源 3=已充满
+        status_map = {"1": "使用中", "2": "接通电源", "3": "已充满"}
+        status = status_map.get(parts[1], "未知")
         return percent, status, -1, 100
     except Exception:
         return -1, "未知", -1, 100

@@ -22,25 +22,26 @@ def run(): # 修复一下蓝屏消失的问题
 
     time.sleep(0.5)
 
-    # 不触发 autoreset
-    if terminal.CAPS["ansi"]:
-        sys.stdout.write("\033[44m\033[37m")
-    terminal.clear_screen()
+    try:
+        # 不触发 autoreset
+        if terminal.CAPS["ansi"]:
+            sys.stdout.write("\033[44m\033[37m")
+        terminal.clear_screen()
 
-    # 避免 colorama 自动重置背景色
-    sys.stdout.write("\n")
-    sys.stdout.write("  *** SYSTEM ERROR ***\n")
-    sys.stdout.write("\n")
-    sys.stdout.write("  A fatal exception has occurred at 0xDEADBEEF\n")
-    sys.stdout.write("  The system has been halted.\n")
-    sys.stdout.write("\n")
-    sys.stdout.write("  Attempting to recover...\n")
-    sys.stdout.flush()
-    time.sleep(3)
-
-    # 恢复代码
-    if terminal.CAPS["ansi"]:
-        sys.stdout.write("\033[0m")
-    terminal.clear_screen()
+        # 避免 colorama 自动重置背景色
+        sys.stdout.write("\n")
+        sys.stdout.write("  *** SYSTEM ERROR ***\n")
+        sys.stdout.write("\n")
+        sys.stdout.write("  A fatal exception has occurred at 0xDEADBEEF\n")
+        sys.stdout.write("  The system has been halted.\n")
+        sys.stdout.write("\n")
+        sys.stdout.write("  Attempting to recover...\n")
+        sys.stdout.flush()
+        time.sleep(3)
+    finally:
+        # Ctrl+C 打断时也要把蓝底退掉，不然终端会一直花着
+        if terminal.CAPS["ansi"]:
+            sys.stdout.write("\033[0m")
+        terminal.clear_screen()
     sys.stdout.write("  Just kidding. Your terminal is fine.\n\n")
     sys.stdout.flush()
