@@ -90,20 +90,22 @@ def get_wifi_windows():
             ["netsh", "wlan", "show", "interfaces"],
             capture_output=True, text=True
         )
-        ssid = re.search(r"SSID\s*:\s*(.+)", result.stdout)
+        # (?<!B)SS 排掉 BSSID；中英文系统关键词不同，两组都试
+        ssid = re.search(r"(?<!B)SSID\s*:\s*(.+)", result.stdout)
         ssid = ssid.group(1).strip() if ssid else "未知"
 
-        rssi = re.search(r"Signal\s*:\s*(\d+)%", result.stdout)
+        rssi = re.search(r"(?:Signal|信号)\s*:\s*(\d+)%", result.stdout)
         signal_pct = int(rssi.group(1)) if rssi else 0
         rssi = int((signal_pct / 2) - 100) if signal_pct > 0 else -100
 
-        channel = re.search(r"Channel\s*:\s*(\d+)", result.stdout)
+        channel = re.search(r"(?:Channel|信道)\s*:\s*(\d+)", result.stdout)
         channel = channel.group(1) if channel else "未知"
 
         bssid = re.search(r"BSSID\s*:\s*([0-9A-Fa-f:]+)", result.stdout)
         bssid = bssid.group(1).strip() if bssid else "未知"
 
-        security = "WPA2"
+        security = re.search(r"(?:Authentication|身份验证)\s*:\s*(.+)", result.stdout)
+        security = security.group(1).strip() if security else "未知"
         return ssid, rssi, channel, bssid, security
     except Exception:
         return "未知", -100, "未知", "未知", "未知"
