@@ -24,15 +24,18 @@ def run():
     time.sleep(1)
     terminal.hide_cursor()
 
-    width = 30
-    for i in range(width + 1):
-        pct = int(i / width * 100)
-        sys.stdout.write(f"\r  [{render_bar(i / width, width)}] {pct}%")
-        sys.stdout.flush()
-        time.sleep(0.08)
+    try:
+        width = 30
+        for i in range(width + 1):
+            pct = int(i / width * 100)
+            sys.stdout.write(f"\r  [{render_bar(i / width, width)}] {pct}%")
+            sys.stdout.flush()
+            time.sleep(0.08)
 
-    print()
-    print(f"  {msg}")
-    print("  Bye!")
-    terminal.show_cursor()
-    print()
+        print()
+        print(f"  {msg}")
+        print("  Bye!")
+    finally:
+        # Ctrl+C 中途打断时也要把光标放出来
+        terminal.show_cursor()
+        print()
