@@ -58,6 +58,11 @@ def run_server(port):
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     try:
         server.bind(("0.0.0.0", port))
+    except OSError:
+        print(f"  端口 {port} 已被占用，创建房间失败。")
+        print("  通常是另一个没退出的 wocli chat，关掉后重试即可。")
+        return None
+    try:
         server.listen(1)
         server.settimeout(60)
         conn, addr = server.accept()
