@@ -23,7 +23,8 @@ def tree(dir_path, prefix="", max_depth=3, current_depth=0, stats=None):
     except PermissionError:
         print(f"{prefix}[denied]")
         return
-    except FileNotFoundError:
+    except OSError:
+        # 文件路径、坏符号链接等统一按读不了处理，不往外抛堆栈
         print(f"{prefix}[not found]")
         return
 
@@ -53,6 +54,10 @@ def tree(dir_path, prefix="", max_depth=3, current_depth=0, stats=None):
 def run():
     target = sys.argv[1] if len(sys.argv) > 1 else "."
     target = os.path.abspath(target)
+
+    if os.path.isfile(target):
+        print(f"\n  {target} 是文件，请传入文件夹路径。\n")
+        return
 
     print(f"\n  {target}")
     tree(target)
