@@ -41,12 +41,14 @@ def get_ports_windows():
                 if ":" in addr:
                     port = addr.split(":")[-1]
                     try:
+                        # CSV 格式不随系统语言变，取首列进程名；
+                        # PID 无匹配时 tasklist 输出本地化的 INFO 文本（不以引号开头）
                         proc_result = subprocess.run(
-                            ["tasklist", "/FI", f"PID eq {pid}"],
+                            ["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"],
                             capture_output=True, text=True
                         )
-                        proc_lines = proc_result.stdout.strip().split("\n")
-                        proc = proc_lines[-1].split()[0] if len(proc_lines) > 1 else pid
+                        out = proc_result.stdout.strip()
+                        proc = out.split('","')[0].lstrip('"') if out.startswith('"') else pid
                     except Exception:
                         proc = pid
                     ports.append((port, proc))
