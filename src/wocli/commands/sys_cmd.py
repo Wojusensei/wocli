@@ -3,6 +3,7 @@
 import platform
 import os
 import re
+import shutil
 import time
 import sys
 
@@ -122,11 +123,9 @@ def get_memory_usage():
 def get_disk_usage():
     """Get disk usage."""
     try:
-        stat = os.statvfs(os.path.expanduser("~"))
-        total = stat.f_frsize * stat.f_blocks
-        free = stat.f_frsize * stat.f_bfree
-        used = total - free
-        return used, total
+        # shutil.disk_usage 三个平台都可用，os.statvfs 在 Windows 上不存在
+        usage = shutil.disk_usage(os.path.expanduser("~"))
+        return usage.used, usage.total
     except Exception:
         return 0, 1
 
