@@ -45,8 +45,16 @@ def get_cpu_usage():
             )
             for line in result.stdout.split("\n"):
                 if "Cpu(s)" in line:
-                    parts = line.split(":")[1].split(",")
-                    return float(parts[0].strip().replace("%us", "").replace("%id", ""))
+                    # procps 输出形如 "%Cpu(s):  5.9 us,  2.4 sy, ... 91.2 id"，
+                    # 旧版则带百分号（"5.9%us"），按字段后缀取 us/sys 两段求和
+                    user = sys_cpu = 0.0
+                    for field in line.split(":", 1)[-1].split(","):
+                        field = field.strip()
+                        if field.endswith("us"):
+                            user = float(field[:-2].strip().rstrip("%"))
+                        elif field.endswith("sy"):
+                            sys_cpu = float(field[:-2].strip().rstrip("%"))
+                    return min(user + sys_cpu, 100)
     except Exception:
         pass
     return 0
