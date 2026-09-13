@@ -121,7 +121,11 @@ def get_public_ip():
     except Exception:
         try:
             import urllib.request
-            response = urllib.request.urlopen("https://ifconfig.me", timeout=5)
+            # 用 /ip 路径：ifconfig.me 根路径会按 UA 返回整页 HTML，/ip 永远是纯文本 IP
+            req = urllib.request.Request(
+                "https://ifconfig.me/ip", headers={"User-Agent": "wocli"}
+            )
+            response = urllib.request.urlopen(req, timeout=5)
             return response.read().decode().strip()
         except Exception:
             return "Unknown"
