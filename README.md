@@ -48,6 +48,8 @@ wocli battery : 电池信息，健康度评分
 
 wocli wifi : WiFi 名称、信号强度打分、信道、加密方式
 
+wocli count ：统计中文与英文文本词数，支持无参数和参数-cn，-en，不支持直接传文本作为参数
+
 
 ### 发电
 
