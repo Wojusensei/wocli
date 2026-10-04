@@ -11,7 +11,7 @@ from wocli.commands import (
     ip, port, tree, sys_cmd, path_cmd, gpa, luck, matrix,
     lolcat, time_cmd, hash_cmd, regex_cmd, typing_cmd,
     progress, qr_cmd, goodbye, cow, glitch, battery, wifi_cmd,
-    dead, chat, badapple
+    dead, chat, badapple, count_cmd
 )
 
 COMMANDS = {
@@ -38,11 +38,12 @@ COMMANDS = {
     "dead": (dead.run, "伪装终端死机"),
     "chat": (chat.run, "局域网聊天，和舍友用终端对话"),
     "badapple": (badapple.run, "播放 Bad Apple ASCII 动画"),
+    "count": (count_cmd.run, "统计文本字数/单词数 (-cn 中文字数 / -en 英文单词数)"),
 }
 
 HELP_GROUPS = {
     "学习": ["ip", "chat"],
-    "效率": ["port", "tree", "sys", "path", "battery", "wifi"],
+    "效率": ["port", "tree", "sys", "path", "battery", "wifi", "count"],
     "发电": ["gpa", "luck", "matrix", "lolcat", "typing", "progress", "qr", "goodbye", "cow", "glitch", "dead", "badapple"],
     "coding": ["time", "hash", "regex"]
 }
