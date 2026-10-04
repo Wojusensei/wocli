@@ -53,9 +53,8 @@ def run():
             sys.stdout.write(f"\r  [{bar}] {progress:.1f}%  ETA: {eta}s")
             sys.stdout.flush()
             time.sleep(random.uniform(0.1, 0.5))
-    except Exception:
-        pass
     finally:
+        # Ctrl+C 已被信号处理器接管；其他异常上抛交给 main 统一处理，这里只负责恢复光标
         terminal.show_cursor()
         print()
         print()

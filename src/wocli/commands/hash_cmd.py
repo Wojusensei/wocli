@@ -5,21 +5,18 @@ import sys
 import os
 
 
-def compute_hash(filepath, algo):
-    """计算文件哈希值."""
-    h = hashlib.new(algo)
+def compute_hashes(filepath):
+    """单次读取同时算 MD5 和 SHA256，大文件不用扫两遍."""
+    md5 = hashlib.new("md5")
+    sha256 = hashlib.new("sha256")
     try:
         with open(filepath, "rb") as f:
-            while True:
-                chunk = f.read(8192)
-                if not chunk:
-                    break
-                h.update(chunk)
-        return h.hexdigest()
-    except FileNotFoundError:
-        return None
-    except PermissionError:
-        return None
+            while chunk := f.read(8192):
+                md5.update(chunk)
+                sha256.update(chunk)
+        return md5.hexdigest(), sha256.hexdigest()
+    except (FileNotFoundError, PermissionError):
+        return None, None
 
 
 def run():
@@ -34,8 +31,7 @@ def run():
 
     print()
     print(f"  文件：{os.path.basename(filepath)}")
-    md5 = compute_hash(filepath, "md5")
-    sha256 = compute_hash(filepath, "sha256")
+    md5, sha256 = compute_hashes(filepath)
     print(f"  MD5：    {md5 if md5 else '计算失败'}")
     print(f"  SHA256： {sha256 if sha256 else '计算失败'}")
     print()
