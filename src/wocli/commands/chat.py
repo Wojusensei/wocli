@@ -2,8 +2,6 @@
 import socket
 import threading
 import sys
-import os
-import platform
 
 
 def get_local_ip():

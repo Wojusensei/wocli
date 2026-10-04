@@ -30,13 +30,6 @@ def glitch_zalgo(text):
     return up + "\n" + text + "\n" + down
 
 
-def glitch_morse(text):
-    return " ".join(
-        "".join(random.choice([".", "-"]) for _ in range(random.randint(1, 4)))
-        for _ in text.split()
-    )
-
-
 def run():
     """运行 glitch 命令."""
     if len(sys.argv) > 1:
