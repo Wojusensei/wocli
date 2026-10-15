@@ -14,8 +14,6 @@ CAPS = {
 def init_terminal():
     init(autoreset=False)   # 如果您在准备 PR 的时候发现了这一行，我移除了 colorama 自动重置颜色，你可以按需更改
 
-    global CAPS
-
     # ANSI test
     if platform.system() == "Windows":
         try:
