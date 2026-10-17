@@ -30,7 +30,7 @@ Windows 用户如果被提示 wocli 命令找不到，请把 Python 的 Scripts 
 
 ### 学习
 
-wocli ip : 查看内网 IPv4 / IPv6、网关、公网 IP
+wocli ip : 查看内网 IPv4 / IPv6、默认网关（含 IPv6 网关与出口网卡）、公网 IPv4 / IPv6
 
 wocli chat : 局域网聊天，不需要网络，输入对方 IP 即可对话；对方电脑运行此功能后会显示 IP 以及其他需要的信息
 
@@ -46,9 +46,11 @@ wocli path : 列出 PATH 环境变量，标注缺失项
 
 wocli battery : 电池信息，健康度评分
 
-wocli wifi : WiFi 名称、信号强度打分、信道、加密方式
+wocli wifi : WiFi 名称、信号强度打分、信道、加密方式、协商速率
 
 wocli count ：统计中文与英文文本词数，支持无参数和参数-cn，-en，不支持直接传文本作为参数
+
+注（macOS 14 及以上）：系统会对 Wi-Fi 名称和 BSSID 打码，`wocli wifi` 的这两项需要给终端开定位权限（系统设置 → 隐私与安全性 → 定位服务）才会显示，信号强度、信道、加密方式、速率不受影响。Windows 的电池循环次数与最大容量来自 `powercfg` 电池报告，第一次查会多等一两秒。
 
 
 ### 发电
