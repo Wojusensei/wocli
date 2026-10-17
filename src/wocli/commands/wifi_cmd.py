@@ -184,6 +184,9 @@ def _windows_wifi():
         return info
 
     lowered = text.lower()
+    if "没有无线接口" in text or "no wireless interface" in lowered:
+        info["note"] = "系统里没有无线网卡，netsh 查不到无线状态"
+        return info
     if "已断开" in text or "disconnected" in lowered:
         info["note"] = "当前没有连上 Wi-Fi（可能是在用有线网络，或 Wi-Fi 已关闭）"
 
