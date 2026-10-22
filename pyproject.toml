@@ -28,3 +28,6 @@ wocli = "wocli.main:main"
 
 [tool.setuptools.dynamic]
 version = {attr = "wocli.__version__"}
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
