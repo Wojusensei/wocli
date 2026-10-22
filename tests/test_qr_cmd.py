@@ -1,14 +1,16 @@
-"""qr 命令：静区、渲染几何，以及"按上下模块配色"的渲染不变式.
+"""qr 命令：静区、两种渲染的几何、SVG 导出.
 
-这些用例不需要二维码解码器：把渲染结果再解析回模块矩阵，和原始矩阵逐格比对，
-就能锁住静区、行序、上下半块和颜色映射——这几点出错都会直接导致扫不出来。
+用例不需要二维码解码器：把渲染结果解析回模块矩阵，和原始矩阵逐格比对，
+就能锁住静区、行序、半块极性和颜色映射——这几处出错都会直接导致扫不出来。
 """
 import re
 
 from wocli.commands import qr_cmd
 
-BLOCK_TOKEN = re.compile(r"(\x1b\[\d+;\d+m|\u2580|\x1b\[0m)")
-CELL_TOKEN = re.compile(r"(\x1b\[\d+m| +)")
+# 用户反馈扫不出的真实长链，用来守住"紧凑渲染必须能塞进 80 列"这条线
+LONG_URL = ("https://www.bilibili.com/video/BV1cQHs6cEN5/"
+            "?spm_id_from=333.1387.favlist.content.click"
+            "&vd_source=1dfb4d1edcfabf3c3f60fad2fa3acd24")
 
 FINDER = [
     "1111111",
@@ -20,28 +22,51 @@ FINDER = [
     "1111111",
 ]
 
+# 紧凑渲染里字符 -> (上模块是否深色, 下模块是否深色)
+COMPACT_GLYPHS = {
+    "\u2588": (False, False),   # 整块白：两个都浅
+    "\u2580": (False, True),    # 上半白：上浅下深
+    "\u2584": (True, False),    # 下半白：上深下浅
+    " ": (True, True),          # 留黑：两个都深
+}
+
 
 def _as_bools(matrix):
     return [[bool(value) for value in row] for row in matrix]
 
 
-def _parse_blocks(lines):
-    """把半块渲染的文本行解析回模块矩阵（上下两行一组）."""
+def _parse_wide(lines):
+    """宽渲染：每行一个模块行，背景色决定明暗（每个模块两个空格）."""
+    rows = []
+    for line in lines:
+        body = line[len(qr_cmd.INDENT):]
+        assert body.endswith(qr_cmd.RESET)
+        body = body[:-len(qr_cmd.RESET)]
+        dark = False
+        row = []
+        for token in re.split(r"(\x1b\[\d+m|  )", body):
+            if token == qr_cmd.BLACK_BG:
+                dark = True
+            elif token == qr_cmd.WHITE_BG:
+                dark = False
+            elif token == "  ":
+                row.append(dark)
+        rows.append(row)
+    return rows
+
+
+def _parse_compact(lines):
+    """紧凑渲染：上下两个模块拼成一个字符."""
     upper_rows, lower_rows = [], []
     for line in lines:
-        assert line.startswith(qr_cmd.INDENT)
         body = line[len(qr_cmd.INDENT):]
-        foreground = background = None
+        match = re.match(r"\x1b\[40;37;1m(.*)\x1b\[0m$", body)
+        assert match, f"每行都该是「黑底 + 亮白前景」: {line!r}"
         uppers, lowers = [], []
-        for token in BLOCK_TOKEN.split(body):
-            if token == qr_cmd._HALF_BLOCK:
-                assert foreground is not None and background is not None, \
-                    "没有配色就画了半块"
-                uppers.append(foreground == qr_cmd._FG[True])
-                lowers.append(background == qr_cmd._BG[True])
-            elif token.startswith("\x1b[") and ";" in token:
-                fg_text, bg_text = token[2:-1].split(";")
-                foreground, background = int(fg_text), int(bg_text)
+        for char in match.group(1):
+            upper_dark, lower_dark = COMPACT_GLYPHS[char]
+            uppers.append(upper_dark)
+            lowers.append(lower_dark)
         upper_rows.append(uppers)
         lower_rows.append(lowers)
 
@@ -52,36 +77,15 @@ def _parse_blocks(lines):
     return matrix
 
 
-def _parse_cells(lines, scale):
-    """把整格渲染的文本行解析回模块矩阵（一行一个模块）."""
-    matrix = []
-    for line in lines:
-        assert line.startswith(qr_cmd.INDENT)
-        body = line[len(qr_cmd.INDENT):]
-        dark = None
-        row = []
-        for token in CELL_TOKEN.split(body):
-            if token.startswith("\x1b["):
-                code = token[2:-1]
-                if code != "0":
-                    dark = int(code) == qr_cmd._BG[True]
-            elif token:
-                assert dark is not None, "没有背景色就画了格子"
-                assert len(token) % scale == 0
-                row.extend([dark] * (len(token) // scale))
-        matrix.append(row)
-    return matrix
-
-
 def test_quiet_zone_is_added():
     """qrcode 的 modules 不含静区，渲染前必须自己补 4 模块.
 
-    缺静区会被微信这类严格解码器直接判为无法识别——之前 border=4 只对
-    make_image() 生效，终端路径其实一直没有静区。
+    缺静区会被严格些的解码器直接判为无法识别——qrcode 的 border 参数
+    只影响 make_image()，对终端渲染没有任何作用。
     """
     matrix = qr_cmd.build_matrix("https://example.com")
     size = len(matrix)
-    assert size % 2 == 1  # 符号尺寸是奇数，补 8 之后仍是奇数
+    assert size % 2 == 1
     for i in range(qr_cmd.QUIET_ZONE):
         assert not any(matrix[i]), f"第 {i} 行不是空白"
         assert not any(matrix[size - 1 - i]), f"倒数第 {i + 1} 行不是空白"
@@ -100,37 +104,88 @@ def test_finder_patterns_stay_intact():
         assert row == expected, f"定位图形第 {dy} 行: {row}"
 
 
-def test_blocks_roundtrip():
-    """半块渲染再解析回来必须逐格一致（上下半块和行序都不能错）."""
+def test_wide_roundtrip():
+    """宽渲染解析回来必须和矩阵逐格一致（一行一个模块行）."""
     matrix = qr_cmd.build_matrix("https://example.com")
-    parsed = _parse_blocks(qr_cmd.render_blocks(matrix))
+    assert _parse_wide(qr_cmd.render_wide(matrix)) == _as_bools(matrix)
+
+
+def test_compact_roundtrip():
+    """紧凑渲染解析回来也必须逐格一致（上下半块极性别弄反）."""
+    matrix = qr_cmd.build_matrix("wocli 中文二维码测试")
+    parsed = _parse_compact(qr_cmd.render_compact(matrix))
     expected = _as_bools(matrix)
-    # 行数是奇数时最后一行只有上半，解析会多补一行空的下半
+    # 行数为奇数时最后一行只有上半，解析会多补一行空的下半
     assert parsed[:len(expected)] == expected
     assert 0 <= len(parsed) - len(expected) <= 1
 
 
-def test_cells_roundtrip():
-    """整格渲染一行一个模块，解析回来也要一致（中文内容同样覆盖）."""
-    matrix = qr_cmd.build_matrix("wocli 中文二维码测试")
-    for scale in (1, 2):
-        parsed = _parse_cells(qr_cmd.render_cells(matrix, scale), scale)
-        assert parsed == _as_bools(matrix)
+def test_lines_have_consistent_width():
+    """同一种渲染里所有行必须等宽：参差不齐或超宽换行都会把码切坏."""
+    matrix = qr_cmd.build_matrix("wocli 终端二维码测试，中文内容也要能扫")
+    for lines, per_module in ((qr_cmd.render_wide(matrix), 2),
+                              (qr_cmd.render_compact(matrix), 1),
+                              (qr_cmd.render_plain(matrix), 1)):
+        expected = len(matrix[0]) * per_module + len(qr_cmd.INDENT)
+        for line in lines:
+            body = re.sub(r"\x1b\[[0-9;]*m", "", line)
+            assert len(body) == expected
 
 
-def test_cells_top_row_is_blank():
-    """整格渲染的第一行是静区：只该有白底，不该出现黑底."""
-    matrix = qr_cmd.build_matrix("hello")
-    first = qr_cmd.render_cells(matrix, 1)[0]
-    assert ("\033[%dm" % qr_cmd._BG[True]) not in first
+def test_wide_needs_wide_terminal():
+    """真实长链：宽渲染要两倍宽度，80 列终端放不下——所以需要紧凑渲染兜底."""
+    matrix = qr_cmd.build_matrix(LONG_URL)
+    modules = len(matrix[0])
+    assert modules * 2 + len(qr_cmd.INDENT) > 80
+    # 紧凑渲染必须塞得进 80 列，否则默认窗口里就没法显示了
+    assert modules + len(qr_cmd.INDENT) <= 80
 
 
-def test_layout_prefers_cells_when_it_fits():
-    """窗口放得下就用不依赖字形的整格渲染，窄了用单字符宽，矮了退回半块."""
-    assert qr_cmd.choose_layout(33, 120, 60) == ("cells", 2)
-    assert qr_cmd.choose_layout(33, 40, 60) == ("cells", 1)
-    assert qr_cmd.choose_layout(33, 120, 24) == ("blocks", 1)
-    assert qr_cmd.choose_layout(33, 30, 60) == ("blocks", 1)
+def test_choose_layout():
+    """宽度够用宽渲染（不依赖字形），否则退回紧凑渲染."""
+    assert qr_cmd.choose_layout(33, 120) == "wide"
+    assert qr_cmd.choose_layout(33, 70) == "wide"      # 33*2+2=68 正好放得下
+    assert qr_cmd.choose_layout(33, 60) == "compact"
+
+
+def test_parse_args():
+    text, svg, compact = qr_cmd.parse_args(["hello", "world"])
+    assert (text, svg, compact) == ("hello world", None, False)
+    assert qr_cmd.parse_args(["-s", "a.svg", "x", "y"]) == (
+        "x y", "a.svg", False)
+
+    text, svg, compact = qr_cmd.parse_args(["--svg", "out.svg", "hello"])
+    assert (text, svg, compact) == ("hello", "out.svg", False)
+
+    text, svg, compact = qr_cmd.parse_args(["--compact", "hello"])
+    assert (text, svg, compact) == ("hello", None, True)
+
+    text, svg, compact = qr_cmd.parse_args(["-c", "--svg", "q.svg", "hi"])
+    assert (text, svg, compact) == ("hi", "q.svg", True)
+
+
+def test_svg_output(tmp_path):
+    """SVG 是任何终端都能用的兜底：结构、静区、深色模块数都要对."""
+    matrix = qr_cmd.build_matrix("https://example.com")
+    path = tmp_path / "qr.svg"
+    qr_cmd.render_svg(matrix, str(path))
+    text = path.read_text(encoding="utf-8")
+    size = len(matrix)
+
+    assert f'viewBox="0 0 {size} {size}"' in text
+    assert 'shape-rendering="crispEdges"' in text      # 关抗锯齿，避免模块间出现灰边
+    assert 'fill="#ffffff"' in text
+
+    rects = re.findall(
+        r'<rect x="(\d+)" y="(\d+)" width="1" height="1"/>', text)
+    dark = sum(1 for row in matrix for value in row if value)
+    assert len(rects) == dark
+
+    xs = [int(x) for x, _ in rects]
+    ys = [int(y) for _, y in rects]
+    quiet = qr_cmd.QUIET_ZONE
+    assert min(xs) >= quiet and min(ys) >= quiet
+    assert max(xs) <= size - 1 - quiet and max(ys) <= size - 1 - quiet
 
 
 def test_chinese_payload_builds():
@@ -139,11 +194,8 @@ def test_chinese_payload_builds():
     assert len(matrix) == len(matrix[0])
 
 
-def test_plain_fallback_uses_block_chars():
-    """不支持 ANSI 时退回 █▀▄，静区表现为空格，行数减半."""
+def test_plain_fallback_has_no_ansi():
     matrix = qr_cmd.build_matrix("hello")
-    lines = qr_cmd.render_plain(matrix)
-    assert len(lines) == (len(matrix) + 1) // 2
-    allowed = set("\u2588\u2580\u2584 ")
-    assert all(set(line.strip()) <= allowed for line in lines)
-    assert "\x1b[" not in "".join(lines)
+    joined = "".join(qr_cmd.render_plain(matrix))
+    assert "\x1b[" not in joined
+    assert len(qr_cmd.render_plain(matrix)) == (len(matrix) + 1) // 2
