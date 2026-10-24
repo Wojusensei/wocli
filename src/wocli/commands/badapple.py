@@ -153,6 +153,10 @@ def _fetch_and_cache():
 
 def load_frames(frame_file=None):
     """加载帧序列，找不到时提示下载."""
+    # 显式传进来的路径写错了要说一声，不能静默换成默认帧源
+    if frame_file and not os.path.exists(frame_file):
+        print(f"  找不到 {frame_file}，改用默认帧源。")
+
     candidates = [
         frame_file,
         os.environ.get("WOCLI_BADAPPLE_FRAMES"),
@@ -161,7 +165,27 @@ def load_frames(frame_file=None):
     ]
     for path in candidates:
         if path and os.path.exists(path):
-            return _read_frames(path)
+            if path != _cache_path():
+                return _read_frames(path)
+            # 缓存可能被上次中断的下载写坏：半截 gzip 会让每次启动都崩，
+            # 这里读失败就删掉它走重新下载
+            try:
+                frames = _read_frames(path)
+            except (OSError, EOFError, ValueError):
+                print("  本地缓存损坏，重新下载...")
+                try:
+                    os.unlink(path)
+                except OSError:
+                    pass
+                break
+            if len(frames) < 100:
+                print("  本地缓存不完整，重新下载...")
+                try:
+                    os.unlink(path)
+                except OSError:
+                    pass
+                break
+            return frames
 
     print("  本地没有帧序列，首次使用需要联网下载（约 4.6MB，之后缓存离线播放）。")
     try:
@@ -269,7 +293,7 @@ def run():
     fps = max(1, min(60, fps))
     print(f"  共 {len(frames)} 帧，约 {len(frames) / fps:.0f} 秒 @ {fps}fps")
 
-    player, music_path = None, _maybe_get_music()
+    music_path = _maybe_get_music()
 
     try:
         cols, lines = os.get_terminal_size()

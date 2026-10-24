@@ -15,7 +15,8 @@ def compute_hashes(filepath):
                 md5.update(chunk)
                 sha256.update(chunk)
         return md5.hexdigest(), sha256.hexdigest()
-    except (FileNotFoundError, PermissionError):
+    # OSError 兜住文件消失/无权限；ValueError 兜住 FIPS 模式禁用 md5 的机器
+    except (OSError, ValueError):
         return None, None
 
 
@@ -25,6 +26,9 @@ def run():
         return
 
     filepath = sys.argv[1]
+    if os.path.isdir(filepath):
+        print(f"\n  这是个目录，请传文件路径：{filepath}\n")
+        return
     if not os.path.isfile(filepath):
         print(f"\n  文件不存在：{filepath}\n")
         return

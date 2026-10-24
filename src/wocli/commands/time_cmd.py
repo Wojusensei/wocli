@@ -38,20 +38,32 @@ def run():
 
     print()
     print(f"  文件：{filename}")
-    print(f"  正在运行...")
+    print("  正在运行...")
 
     try:
         start = time.perf_counter()
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+        # errors="replace"：子进程输出 GBK 等非 UTF-8 字节时不能崩
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, errors="replace", timeout=60)
         elapsed = time.perf_counter() - start
         print(f"  耗时：{elapsed:.3f} 秒")
-        print(f"  状态：{'运行成功' if result.returncode == 0 else f'运行失败 (退出码 {result.returncode})'}")
-        if result.stdout.strip():
-            print(f"  输出：")
-            for line in result.stdout.strip().split("\n")[:10]:
+        if result.returncode == 0:
+            print("  状态：运行成功")
+        else:
+            print(f"  状态：运行失败 (退出码 {result.returncode})")
+
+        # 失败时 stderr 才是重点（报错堆栈都在那），成功时看 stdout
+        tail = result.stdout.strip()
+        label = "  输出："
+        if result.returncode != 0 and result.stderr.strip():
+            tail = result.stderr.strip()
+            label = "  错误输出："
+        if tail:
+            print(label)
+            for line in tail.split("\n")[:10]:
                 print(f"    {line}")
     except subprocess.TimeoutExpired:
-        print(f"  耗时：>60 秒（超时）")
+        print("  耗时：>60 秒（超时）")
     except FileNotFoundError:
         print(f"  找不到解释器：{cmd[0]}")
     print()
