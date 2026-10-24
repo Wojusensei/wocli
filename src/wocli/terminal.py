@@ -2,7 +2,7 @@
 import sys
 import os
 import platform
-from colorama import init, Fore, Back, Style
+from colorama import init, Fore, Style
 
 # 全局能力标志
 CAPS = {

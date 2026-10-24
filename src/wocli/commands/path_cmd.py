@@ -1,7 +1,30 @@
 """wocli path - Display PATH environment variable."""
 
 import os
-import shutil
+import platform
+
+# Windows 上 os.access(X_OK) 对普通文件基本恒为 True（CPython 文档写明的行为），
+# 按扩展名判断才靠得住
+WINDOWS_EXEC_SUFFIXES = (".exe", ".cmd", ".bat", ".com", ".ps1")
+
+
+def count_executables(path):
+    """统计目录里的可执行文件数，读不了的目录按 0 处理."""
+    count = 0
+    try:
+        names = os.listdir(path)
+    except OSError:
+        return 0
+    if platform.system() == "Windows":
+        for name in names:
+            if name.lower().endswith(WINDOWS_EXEC_SUFFIXES):
+                count += 1
+        return count
+    for name in names:
+        full = os.path.join(path, name)
+        if os.access(full, os.X_OK) and not os.path.isdir(full):
+            count += 1
+    return count
 
 
 def run():
@@ -18,15 +41,7 @@ def run():
 
         exists = os.path.isdir(p)
         marker = "" if exists else "  [missing]"
-        exe_count = 0
-        if exists:
-            try:
-                for f in os.listdir(p):
-                    fp = os.path.join(p, f)
-                    if os.access(fp, os.X_OK) and not os.path.isdir(fp):
-                        exe_count += 1
-            except Exception:
-                pass
+        exe_count = count_executables(p) if exists else 0
 
         print(f"  {i:2d}. {p}{marker}")
         if exists and exe_count > 0:

@@ -66,6 +66,14 @@ def run():
             print("\n  输入无效。\n")
             return
 
+        # NaN 的任何比较都是 False，用 not 夹范围能一并挡掉
+        if not 0 < credit:
+            print(f"\n  学费——不是，学分得是正数：{credit}\n")
+            return
+        if not 0 <= grade <= 100:
+            print(f"\n  成绩得在 0~100 之间：{grade}\n")
+            return
+
         point = grade_to_point(grade)
         total_points += point * credit
         total_credits += credit

@@ -99,7 +99,7 @@ def _dispatch():
         COMMANDS[command][0]()
     else:
         print(f"未知命令: {command}")
-        print(f"输入 'wocli help' 查看可用命令。")
+        print("输入 'wocli help' 查看可用命令。")
 
 
 if __name__ == "__main__":

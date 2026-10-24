@@ -1,7 +1,6 @@
 """wocli typing - 终端打字速度测试."""
 
 import time
-import sys
 import random
 
 
