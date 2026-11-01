@@ -7,46 +7,13 @@ from wocli import terminal, __version__
 
 terminal.init_terminal()
 
-from wocli.commands import (
+from wocli.commands import (  # noqa: F401  保留旧路径导入
     ip, port, tree, sys_cmd, path_cmd, gpa, luck, matrix,
     lolcat, time_cmd, hash_cmd, regex_cmd, typing_cmd,
     progress, qr_cmd, goodbye, cow, glitch, battery, wifi_cmd,
     dead, chat, badapple, count_cmd
 )
-
-COMMANDS = {
-    "ip": (ip.run, "查看网络信息 (IPv4/IPv6/网关/公网IP)"),
-    "port": (port.run, "查看端口占用"),
-    "tree": (tree.run, "树形显示文件夹结构"),
-    "sys": (sys_cmd.run, "系统状态 (CPU/内存/磁盘)"),
-    "path": (path_cmd.run, "查看 PATH 环境变量"),
-    "gpa": (gpa.run, "加权 GPA 计算器"),
-    "luck": (luck.run, "每日编程运势"),
-    "matrix": (matrix.run, "嘉豪数字雨"),
-    "lolcat": (lolcat.run, "彩虹色输出文字"),
-    "time": (time_cmd.run, "测试代码运行耗时"),
-    "hash": (hash_cmd.run, "计算文件 MD5/SHA256"),
-    "regex": (regex_cmd.run, "正则表达式测试器"),
-    "typing": (typing_cmd.run, "打字速度测试"),
-    "progress": (progress.run, "假进度条"),
-    "qr": (qr_cmd.run, "终端生成二维码"),
-    "goodbye": (goodbye.run, "花式退出动画"),
-    "cow": (cow.run, "ASCII 牛说话"),
-    "glitch": (glitch.run, "文字故障风"),
-    "battery": (battery.run, "电池信息与健康评分"),
-    "wifi": (wifi_cmd.run, "WiFi 信息与信号评分"),
-    "dead": (dead.run, "伪装终端死机"),
-    "chat": (chat.run, "局域网聊天，和舍友用终端对话"),
-    "badapple": (badapple.run, "播放 Bad Apple ASCII 动画"),
-    "count": (count_cmd.run, "统计文本字数/单词数 (-cn 中文字数 / -en 英文单词数)"),
-}
-
-HELP_GROUPS = {
-    "学习": ["ip", "chat"],
-    "效率": ["port", "tree", "sys", "path", "battery", "wifi", "count"],
-    "发电": ["gpa", "luck", "matrix", "lolcat", "typing", "progress", "qr", "goodbye", "cow", "glitch", "dead", "badapple"],
-    "coding": ["time", "hash", "regex"]
-}
+from wocli.registry import ALIASES, COMMANDS, HELP_GROUPS
 
 
 def print_help():
@@ -55,6 +22,7 @@ def print_help():
     print(logo)
     print()
     print("  用法: wocli <命令> [参数]")
+    print("  驾驶舱: 直接运行 wocli（WOCLI_NO_TUI=1 可回到这个帮助页）")
     print()
 
     for group, cmds in HELP_GROUPS.items():
@@ -79,12 +47,39 @@ def main():
         raise SystemExit(130)
 
 
+def _should_launch_tui():
+    """没有子命令时：TTY 下默认进驾驶舱，管道/脚本里仍然打印帮助."""
+    if os.environ.get("WOCLI_NO_TUI", "").lower() in ("1", "true", "yes"):
+        return False
+    try:
+        return bool(sys.stdin.isatty() and sys.stdout.isatty())
+    except (AttributeError, ValueError):
+        return False
+
+
+TUI_OPTIONS = ("--theme", "--mode", "--no-boot", "--ascii")
+
+
+def _is_tui_option(argument):
+    return any(
+        argument == option or argument.startswith(option + "=")
+        for option in TUI_OPTIONS
+    )
+
+
 def _dispatch():
     if len(sys.argv) < 2:
-        print_help()
-        return
+        if _should_launch_tui():
+            sys.argv = [sys.argv[0], "tui"]
+        else:
+            print_help()
+            return
+    elif _is_tui_option(sys.argv[1]):
+        # wocli --theme neon 和 wocli tui --theme neon 等价
+        sys.argv = [sys.argv[0], "tui"] + sys.argv[1:]
 
     command = sys.argv[1].lower()
+    command = ALIASES.get(command, command)
 
     if command in ("help", "-h", "--help"):
         print_help()
