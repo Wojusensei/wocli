@@ -22,11 +22,47 @@ pip install wocli
 
 Windows 用户如果被提示 wocli 命令找不到，请把 Python 的 Scripts 目录加到 PATH 环境变量。
 
-如果你拉取到本地并对源代码进行了修改和调试，例如在本地用 ```pip install -e .``` 开发模式时，colorama 没自动装上是因为可编辑安装有时不会重新解析依赖，需要自行安装依赖
+如果你拉取到本地并对源代码进行了修改和调试，例如在本地用 ```pip install -e .``` 开发模式时，colorama / prompt_toolkit 没自动装上是因为可编辑安装有时不会重新解析依赖，需要自行安装依赖
 
 ## 🔧 使用
 
-直接输入 `wocli` 查看所有命令：
+直接输入 `wocli` 打开驾驶舱；`wocli help` 查看所有命令。
+
+### 驾驶舱
+
+wocli tui : 终端驾驶舱。输入框上方常驻状态栏，实时显示 wocli 版本、当前目录、Git 分支/改动、电量、WiFi 信号、CPU 和运行时长；输入 `/status` 看内存 waffle 图和完整系统上下文。直接运行 `wocli` 也会进这里。
+
+- `/status` 系统面板：内存分类格子图、CPU / 磁盘 / 电池 / 网络 / Git
+- `/theme catppuccin|neon|amber|paper|auto` 换主题；`auto` 会按终端背景自动选深色或纸白
+- `/mode 正常|整活|死机` 换人格，Shift+Tab 也能循环
+- Tab 补全、Ctrl+K 命令面板、↑ / Ctrl+R 历史
+- 原有命令直接输入即可（带不带 `/` 都行），例如 `/ip`、`/matrix`
+- `/goodbye` 播放退出动画并退出驾驶舱
+- Ctrl+C 清空当前输入，连按两次退出；Ctrl+D 也可以退出
+- `wocli tui --no-boot` 跳过开机自检，`--theme` / `--mode` 可指定启动状态
+- TUI 参数也可以直接跟在裸命令后面：`wocli --theme neon` 等价于 `wocli tui --theme neon`
+- `wocli tui --ascii` 强制 ASCII 图元，给画不出 `▦ ❯` 的终端/字体用
+- 直接运行 `wocli` 会进驾驶舱；`WOCLI_NO_TUI=1 wocli` 或 `wocli help` 看命令列表
+
+系统标签会自动适配：macOS 显示 `macOS 26.x` 而不是 Darwin 内核号，Windows 识别 10/11 并带 build 号，Linux 读 `/etc/os-release` 显示 Ubuntu/Debian 等发行版名，WSL 会标成 `WSL · Ubuntu-24.04`。内存、CPU、电池、WiFi 的采集命令也按平台分支，取不到时显示“未获取到”而不是假数据。
+
+主题、模式和命令历史分别保存在 `~/.wocli_tui.json` 和 `~/.wocli_history`。这个功能依赖 prompt_toolkit，正常 `pip install wocli` 会自动装好。
+
+### 人格模式
+
+| 模式 | 外观 | 适合 |
+|---|---|---|
+| 正常 | `❯` 提示符、静态配色 | 日常使用 |
+| 整活 | `✦` 提示符、强调色轮换、每日运势 | 想看点花的 |
+| 死机 | `▓` 提示符、红色故障、随机乱码 | 纯整活 |
+
+三种模式不影响命令行为，只影响提示符、配色和状态栏人格效果。`/mode` 不带参数会循环切换，并打印当前模式的效果说明；`Shift+Tab` 同样可以切。
+
+### 命令系统
+
+`wocli` 现在分两层：CLI 子命令 + 驾驶舱斜杠命令。入口、别名、补全、注册新命令的方式，以及从 0.7.x 升级的注意事项见 [docs/command-system.md](docs/command-system.md)。
+
+v1.0.0 的变化见 [CHANGELOG.md](CHANGELOG.md)。
 
 ### 学习
 
@@ -104,7 +140,9 @@ wocli regex '表达式' : 正则表达式测试器
 
 tips：
 
-1,新的功能不仅需要单开一个模块，在模块顶端正确注释，还需要在 ```main.py``` 中进行正确注册，例如模块导入，```HELP_GROUPS```以及```COMMANDS```
+命令系统的完整说明（入口、别名、补全、注册方式、0.7.x 迁移）见 [docs/command-system.md](docs/command-system.md)。
+
+1,新的功能不仅需要单开一个模块，在模块顶端正确注释，还需要在 ```registry.py``` 中进行正确注册，例如模块导入，```HELP_GROUPS```以及```COMMANDS```
 
 2,```HELP_GROUPS```中对三个分类的要求并不严格，可以按照贡献者的想法将新功能分类，但是我不赞同将老功能的归类拆散。
 
