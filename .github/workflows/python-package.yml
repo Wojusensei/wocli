@@ -12,7 +12,8 @@ on:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    # Ubuntu 26.04 的 setup-python 清单里没有 3.9 预编译包，固定到 24.04
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
