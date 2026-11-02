@@ -1,18 +1,18 @@
-# ```>_``` wocli
+# wocli
 
-一个何意味终端工具箱，十分甚至是九分的好玩
+wocli 是一个终端工具集合，提供系统信息、网络诊断、文本处理、终端娱乐和局域网聊天等命令。支持 macOS、Windows 和部分 Linux 发行版。
 
-支持 MacOS，Windows 和一部分 Linux 发行版的终端使用
+命令分为两层：顶层 `wocli` 子命令，以及驾驶舱 TUI 内的斜杠命令。命令注册和扩展方式见 [docs/command-system.md](docs/command-system.md)。
 
-## 📦 安装
+## 安装
 
-请先确保你装了python，然后执行：
+要求 Python 3.9 或更高版本。
 
 ```bash
 pip install wocli
 ```
 
-MacOS用户，如果终端提示 externally-managed-environment：
+macOS 若提示 `externally-managed-environment`：
 
 ```bash
 python3 -m venv wocli_env
@@ -20,130 +20,240 @@ source wocli_env/bin/activate
 pip install wocli
 ```
 
-Windows 用户如果被提示 wocli 命令找不到，请把 Python 的 Scripts 目录加到 PATH 环境变量。
+Windows 若提示找不到 `wocli`，将 Python 的 `Scripts` 目录加入 `PATH`。
 
-如果你拉取到本地并对源代码进行了修改和调试，例如在本地用 ```pip install -e .``` 开发模式时，colorama / prompt_toolkit 没自动装上是因为可编辑安装有时不会重新解析依赖，需要自行安装依赖
+从源码安装：
 
-## 🔧 使用
+```bash
+pip install -e .
+```
 
-直接输入 `wocli` 打开驾驶舱；`wocli help` 查看所有命令。
+> 注意：`pip install -e .` 偶尔不会重新解析依赖。缺少 colorama、prompt_toolkit 或 qrcode 时，需要手动安装。
 
-### 驾驶舱
+## 快速开始
 
-wocli tui : 终端驾驶舱。输入框上方常驻状态栏，实时显示 wocli 版本、当前目录、Git 分支/改动、电量、WiFi 信号、CPU 和运行时长；输入 `/status` 看内存 waffle 图和完整系统上下文。直接运行 `wocli` 也会进这里。
+在交互式终端中运行：
 
-- `/status` 系统面板：内存分类格子图、CPU / 磁盘 / 电池 / 网络 / Git
-- `/theme catppuccin|neon|amber|paper|auto` 换主题；`auto` 会按终端背景自动选深色或纸白
-- `/mode 正常|整活|死机` 换人格，Shift+Tab 也能循环
-- Tab 补全、Ctrl+K 命令面板、↑ / Ctrl+R 历史
-- 原有命令直接输入即可（带不带 `/` 都行），例如 `/ip`、`/matrix`
-- `/goodbye` 播放退出动画并退出驾驶舱
-- Ctrl+C 清空当前输入，连按两次退出；Ctrl+D 也可以退出
-- `wocli tui --no-boot` 跳过开机自检，`--theme` / `--mode` 可指定启动状态
-- TUI 参数也可以直接跟在裸命令后面：`wocli --theme neon` 等价于 `wocli tui --theme neon`
-- `wocli tui --ascii` 强制 ASCII 图元，给画不出 `▦ ❯` 的终端/字体用
-- 直接运行 `wocli` 会进驾驶舱；`WOCLI_NO_TUI=1 wocli` 或 `wocli help` 看命令列表
+```bash
+wocli
+```
 
-系统标签会自动适配：macOS 显示 `macOS 26.x` 而不是 Darwin 内核号，Windows 识别 10/11 并带 build 号，Linux 读 `/etc/os-release` 显示 Ubuntu/Debian 等发行版名，WSL 会标成 `WSL · Ubuntu-24.04`。内存、CPU、电池、WiFi 的采集命令也按平台分支，取不到时显示“未获取到”而不是假数据。
+进入驾驶舱。查看命令列表：
 
-主题、模式和命令历史分别保存在 `~/.wocli_tui.json` 和 `~/.wocli_history`。这个功能依赖 prompt_toolkit，正常 `pip install wocli` 会自动装好。
+```bash
+wocli help
+```
+
+运行单个命令：
+
+```bash
+wocli ip
+wocli sys
+wocli cow 你好
+```
+
+在管道、脚本或 CI 中，裸 `wocli` 打印帮助，不进入 TUI。需要强制打印帮助时：
+
+```bash
+WOCLI_NO_TUI=1 wocli
+```
+
+## 驾驶舱
+
+`wocli tui` 打开驾驶舱。在 TTY 中，裸 `wocli` 与之等价。别名：`wocli shell`、`wocli cockpit`。
+
+```bash
+wocli tui
+wocli tui --theme neon --mode 整活
+wocli tui --no-boot
+wocli tui --ascii
+wocli --theme neon
+```
+
+`wocli --theme neon` 等价于 `wocli tui --theme neon`。
+
+选项：
+
+| 选项 | 说明 |
+|---|---|
+| `--theme {catppuccin,neon,amber,paper,auto}` | 指定主题；`auto` 根据终端背景选择深色或浅色主题 |
+| `--mode {正常,整活,死机,normal,fun,chaos,dead}` | 指定人格模式 |
+| `--no-boot` | 跳过开机自检动画 |
+| `--ascii` | 强制使用 ASCII 图元 |
+
+驾驶舱包含：
+
+- 输入框上方的状态栏，显示版本、当前目录、Git 分支和改动、电量、WiFi 信号、CPU、运行时长和时钟。终端宽度不足时，状态栏按优先级省略低优先级字段。
+- `/status` 系统上下文面板，显示内存 waffle 图、CPU、磁盘、电池、WiFi 和 Git。
+- 多列命令补全、历史记录和快捷键。
+
+### 驾驶舱命令
+
+| 命令 | 说明 |
+|---|---|
+| `/status`、`/context` | 显示系统上下文面板 |
+| `/help`、`?` | 显示命令列表和快捷键 |
+| `/theme [名称]` | 切换主题；省略名称时循环切换 |
+| `/mode [名称]` | 切换人格模式；省略名称时循环切换 |
+| `/doctor` | 显示终端、Python、prompt_toolkit、主题和配置路径 |
+| `/clear` | 清屏并重绘欢迎界面 |
+| `/version` | 显示版本号 |
+| `/goodbye` | 播放退出动画并退出驾驶舱 |
+| `/quit`、`/exit`、`q` | 退出驾驶舱 |
+
+注册表中的命令可以直接在驾驶舱中运行。斜杠可省略：
+
+```text
+/ip
+/sys
+/cow 你好
+/regex '\d+'
+```
+
+参数按 shell 规则切分。
+
+### 快捷键
+
+| 按键 | 操作 |
+|---|---|
+| `/` | 打开命令表 |
+| `↑`、`↓` | 在命令表中移动 |
+| `Tab` | 补全当前项 |
+| `Esc` | 关闭命令表 |
+| `Ctrl+K` | 打开命令面板 |
+| `Ctrl+R`、`↑` | 浏览历史 |
+| `Shift+Tab` | 循环人格模式 |
+| `Ctrl+C` | 有输入时清空；空输入时连按两次退出 |
+| `Ctrl+D` | 退出 |
+
+### 主题
+
+| 名称 | 说明 |
+|---|---|
+| `catppuccin` | Catppuccin Mocha 深色主题 |
+| `neon` | 高对比霓虹主题 |
+| `amber` | 琥珀色 CRT 主题 |
+| `paper` | 浅色纸白主题 |
+| `auto` | 根据 `TERM_BACKGROUND` 或 `COLORFGBG` 选择 `catppuccin` 或 `paper`；无法判断时使用 `catppuccin` |
 
 ### 人格模式
 
-| 模式 | 外观 | 适合 |
-|---|---|---|
-| 正常 | `❯` 提示符、静态配色 | 日常使用 |
-| 整活 | `✦` 提示符、强调色轮换、每日运势 | 想看点花的 |
-| 死机 | `▓` 提示符、红色故障、随机乱码 | 纯整活 |
+| 模式 | 外观 |
+|---|---|
+| `正常` | `❯` 提示符，静态配色 |
+| `整活` | `✦` 提示符，强调色轮换，状态栏显示每日运势 |
+| `死机` | `▓` 提示符，红色状态栏，随机故障字符 |
 
-三种模式不影响命令行为，只影响提示符、配色和状态栏人格效果。`/mode` 不带参数会循环切换，并打印当前模式的效果说明；`Shift+Tab` 同样可以切。
+人格模式只影响提示符、配色和状态栏显示，不改变命令行为。
 
-### 命令系统
+### 配置文件
 
-`wocli` 现在分两层：CLI 子命令 + 驾驶舱斜杠命令。入口、别名、补全、注册新命令的方式，以及从 0.7.x 升级的注意事项见 [docs/command-system.md](docs/command-system.md)。
+| 路径 | 内容 |
+|---|---|
+| `~/.wocli_tui.json` | 主题和人格模式 |
+| `~/.wocli_history` | 命令历史 |
 
-v1.0.0 的变化见 [CHANGELOG.md](CHANGELOG.md)。
+## 命令参考
+
+以下命令均通过 `wocli <命令> [参数]` 调用，也可以带斜杠在驾驶舱中运行。
 
 ### 学习
 
-wocli ip : 查看内网 IPv4 / IPv6、默认网关（含 IPv6 网关与出口网卡）、公网 IPv4 / IPv6
-
-wocli chat : 局域网聊天，不需要网络，输入对方 IP 即可对话；对方电脑运行此功能后会显示 IP 以及其他需要的信息（默认端口 52020，可用 `--port` 换；对方用了自定义端口时写成 `IP:端口` 加入。服务端最多等 10 分钟，客户端连不上会自动重试 30 秒）
+| 命令 | 说明 |
+|---|---|
+| `wocli ip` | 显示内网 IPv4/IPv6、默认网关（含 IPv6 网关与出口网卡）和公网 IPv4/IPv6。 |
+| `wocli chat` | 局域网聊天。默认端口 52020，可用 `--port` 指定；连接自定义端口时写成 `IP:端口`。服务端最多等待 10 分钟，客户端连接失败时重试 30 秒。新旧版本使用不同握手协议，不能互通。 |
 
 ### 效率
 
-wocli port : 查看当前端口占用情况
-
-wocli tree : 树形显示当前文件夹结构，文件带大小
-
-wocli sys : CPU / 内存 / 磁盘使用率，带动态进度条
-
-wocli path : 列出 PATH 环境变量，标注缺失项
-
-wocli battery : 电池信息，健康度评分
-
-wocli wifi : WiFi 名称、信号强度打分、信道、加密方式、协商速率
-
-wocli count ：统计中文与英文文本词数，支持无参数和参数-cn，-en，不支持直接传文本作为参数
-
-注（macOS 14 及以上）：系统会对 Wi-Fi 名称和 BSSID 打码，`wocli wifi` 的这两项需要给终端开定位权限（系统设置 → 隐私与安全性 → 定位服务）才会显示，信号强度、信道、加密方式、速率不受影响。Windows 的电池循环次数与最大容量来自 `powercfg` 电池报告，第一次查会多等一两秒。
-
+| 命令 | 说明 |
+|---|---|
+| `wocli tui` | 打开驾驶舱。 |
+| `wocli port` | 显示当前端口占用。 |
+| `wocli tree` | 以树形显示当前目录结构，并标注文件大小。 |
+| `wocli sys` | 显示 CPU、内存和磁盘使用率，带动态进度条。 |
+| `wocli path` | 列出 `PATH` 环境变量，并标注不存在的路径。 |
+| `wocli battery` | 显示电池信息、循环次数、最大容量和健康评分。 |
+| `wocli wifi` | 显示 WiFi 名称、信号强度、信道、加密方式和协商速率。 |
+| `wocli count` | 统计文本词数。`-cn` 统计中文字数，`-en` 统计英文单词数；多行输入以单独一行 `_over_` 结束。 |
 
 ### 发电
 
-wocli gpa ： 交互式算加权 GPA，附带毒舌点评
+| 命令 | 说明 |
+|---|---|
+| `wocli gpa` | 交互式加权 GPA 计算器，附带评语。 |
+| `wocli luck` | 随机显示编程运势、幸运语言和 bug 指数。 |
+| `wocli matrix 文本...` | 数字雨动画，输入的文本会出现在雨中。按 Ctrl+C 退出。 |
+| `wocli lolcat 文本` | 以彩虹渐变输出文本。 |
+| `wocli typing` | 打字速度测试，输出 WPM 和评级。 |
+| `wocli progress` | 假进度条动画。按 Ctrl+C 退出。 |
+| `wocli qr [--svg 文件] [--compact] 文本或链接` | 在终端生成二维码。`--svg` 导出 SVG 图片；`--compact` 强制紧凑渲染。 |
+| `wocli goodbye` | 播放退出动画。在驾驶舱中执行后退出驾驶舱。 |
+| `wocli cow 文本` | 使用 ASCII 牛显示文本。 |
+| `wocli glitch 文本` | 输出故障风文本。 |
+| `wocli dead` | 模拟终端死机、花屏和恢复。 |
+| `wocli badapple` | 播放 Bad Apple ASCII 动画（6572 帧）。首次运行下载帧序列（约 4.6 MB）并缓存；可选下载配乐。可用 `wocli badapple <帧目录或文件>` 或环境变量 `WOCLI_BADAPPLE_FRAMES` 指定帧源。部分播放器不支持音频。 |
 
-wocli luck ： 编程运势、幸运语言、bug 指数（每次输入指令都会重新抽，并不是每日固定）
+### 编程
 
-wocli matrix 一段文本 另一段文本 其他文本（用空格划分）： 嘉豪数字雨，你输入的文本会出现在雨中。Ctrl+C 退出
+| 命令 | 说明 |
+|---|---|
+| `wocli time 文件` | 测试代码运行耗时。 |
+| `wocli hash 文件` | 计算文件的 MD5 和 SHA256。 |
+| `wocli regex 表达式` | 正则表达式测试器；匹配在子进程中运行并带超时。 |
 
-wocli lolcat 文字 : 彩虹渐变色输出文字
+## 平台说明
 
-wocli typing : 打字速度测试，给出 WPM 和评级
+### macOS
 
-wocli progress : 假进度条动画，永远跑不完，Ctrl+C 退出
+- macOS 14 及以上会对 WiFi 名称和 BSSID 打码。需要给终端开启定位权限（系统设置 → 隐私与安全性 → 定位服务）才能显示这两项。信号强度、信道、加密方式和速率不受影响。
+- 电池循环次数和最大容量来自 `pmset` 与 `ioreg`。
+- CPU 使用率取 `top` 的第二份采样。
 
-wocli qr 链接 : 终端生成可扫码的二维码
+### Windows
 
-wocli goodbye : 花式退出动画，随机告别语
+- 电池循环次数和最大容量来自 `powercfg` 电池报告，首次查询可能需要一两秒。
+- 系统版本根据 build 号区分 Windows 10 和 Windows 11。
+- 没有无线网卡时，WiFi 相关字段显示未获取。
 
-wocli cow 文字 : ASCII 牛说你说的话
+### Linux
 
-wocli glitch 文字 : 文字故障风效果
+- 发行版名称读取 `/etc/os-release`。
+- WiFi 信息按 `nmcli`、`iw`、`/proc/net/wireless`、`iwconfig` 的顺序获取。
+- 电池信息读取 `/sys/class/power_supply`。
+- WSL 环境会在系统名称中标注。
 
-wocli dead : 伪装终端死机，花屏、蓝屏、恢复
+### 终端兼容性
 
-wocli badapple : 播放 Bad Apple!! ASCII 动画（6572 帧），首次使用自动下载帧序列（约 4.6MB）并缓存到本地，之后离线播放；可选下载配套背景音乐同步播放；也可用 ```wocli badapple <帧目录/文件>``` 或环境变量 ```WOCLI_BADAPPLE_FRAMES``` 指定自备帧源。部分播放器不支持播放音频。这是核心功能awa
+- 颜色深度自动检测为 truecolor、256 色、16 色或无色。
+- 终端不支持 Unicode 时自动使用 ASCII 图元；也可以使用 `--ascii` 强制启用。
+- 浅色终端可以使用 `--theme paper`，或使用 `--theme auto` 自动选择。
 
+## 开发
 
-### coding
+安装开发依赖并运行测试：
 
-wocli time 文件 : 测试代码运行耗时
+```bash
+python -m pip install -e .
+pytest
+```
 
-wocli hash 文件 : 计算文件 MD5 / SHA256
+运行 CI 使用的 lint 检查：
 
-wocli regex '表达式' : 正则表达式测试器
+```bash
+flake8 src tests --count --select=E9,F63,F7,F82 --show-source --statistics
+```
 
-## 🤝 贡献
+新增命令时，在 `src/wocli/registry.py` 中注册 `COMMANDS` 和 `HELP_GROUPS`；命令实现放在 `src/wocli/commands/`。详细说明见 [docs/command-system.md](docs/command-system.md)。
 
-欢迎每一位用户提交自己的奇思妙想，我会选取我能实现的(?)去实现。一些说明如下：
+## 贡献
 
-### issue
+欢迎提交 issue 和 pull request。提交前请运行测试和 lint 检查。
 
-如果您在使用过程中发现 兼容性问题/功能与描述不符/可以优化的地方 ，请您尽情提交 issue ，就像在其他仓库那样
+## 变更记录
 
-如果您在使用中有奇思妙想，例如 “这里明明可以做一个更好的功能！我要和窝居说一下···” ，您也可以专门为此提一个 issue 
+版本变更见 [CHANGELOG.md](CHANGELOG.md)。
 
-### PR
+## 许可证
 
-在上面，某些 issue 虽然有很好的点子，但是受限于某些原因，可能没法及时更新出来。如果您是一位有热情投入这个仓库的开发者，欢迎前往未关闭的 issue 领取您的任务并在 修改/增添 某些功能后进行拉取请求，我会在审查并 merge 之后将新的版本提交至 PyPI 。
-
-tips：
-
-命令系统的完整说明（入口、别名、补全、注册方式、0.7.x 迁移）见 [docs/command-system.md](docs/command-system.md)。
-
-1,新的功能不仅需要单开一个模块，在模块顶端正确注释，还需要在 ```registry.py``` 中进行正确注册，例如模块导入，```HELP_GROUPS```以及```COMMANDS```
-
-2,```HELP_GROUPS```中对三个分类的要求并不严格，可以按照贡献者的想法将新功能分类，但是我不赞同将老功能的归类拆散。
-
-3,请确保代码符合项目风格，仔细审查有无可以优化的逻辑，并在提交前运行检查确保新老功能均无异常。
+MIT。见 [LICENSE](LICENSE)。
